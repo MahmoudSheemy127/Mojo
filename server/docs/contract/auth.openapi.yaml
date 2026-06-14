@@ -1,0 +1,246 @@
+openapi: 3.1.0
+info:
+  title: Chat API — Auth
+  version: 1.0.0
+  description: >
+    Signup, login, logout, token refresh, Google OAuth, and password reset.
+    Derived from auth.md. Access JWT in Authorization header; rotating refresh
+    token in an httpOnly cookie. All endpoints rate limited ≤10 req/min/IP (NF-11).
+
+servers:
+  - url: '{baseUrl}'
+    variables:
+      baseUrl: { default: 'http://localhost:4000/api' }
+
+tags:
+  - name: Auth
+
+paths:
+  /auth/signup:
+    post:
+      tags: [Auth]
+      summary: Sign up (FR-01)
+      operationId: signup
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password, acceptedTerms]
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 32
+                  pattern: '^[a-zA-Z0-9_]+$'
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+                acceptedTerms: { type: boolean, const: true }
+      responses:
+        '201':
+          description: Account created; access token returned, refresh cookie set.
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+              description: 'refreshToken=…; HttpOnly; Secure; SameSite=Strict'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [user, accessToken]
+                properties:
+                  user: { $ref: './_common.yaml#/components/schemas/SelfUser' }
+                  accessToken: { type: string }
+        '409':
+          $ref: './_common.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_common.yaml#/components/responses/ValidationError'
+        '429':
+          $ref: './_common.yaml#/components/responses/RateLimited'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in (FR-01)
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier, password]
+              properties:
+                identifier: { type: string, description: username OR email }
+                password: { type: string }
+      responses:
+        '200':
+          description: Authenticated; access token returned, refresh cookie set.
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [user, accessToken]
+                properties:
+                  user: { $ref: './_common.yaml#/components/schemas/SelfUser' }
+                  accessToken: { type: string }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '422':
+          $ref: './_common.yaml#/components/responses/ValidationError'
+        '429':
+          $ref: './_common.yaml#/components/responses/RateLimited'
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Rotate refresh token and issue a new access token
+      operationId: refresh
+      description: >
+        Authenticated via the refresh cookie, not a bearer token. No request body.
+      security:
+        - refreshCookie: []
+      responses:
+        '200':
+          description: New access token; refresh cookie rotated (old invalidated).
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accessToken]
+                properties:
+                  accessToken: { type: string }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Log out, invalidate refresh token (FR-03)
+      operationId: logout
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: all
+          in: query
+          required: false
+          schema: { type: boolean, default: false }
+          description: When true, revoke all refresh tokens for the user (optional).
+      responses:
+        '204':
+          description: Logged out; refresh cookie cleared and token revoked.
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+
+  /auth/google:
+    get:
+      tags: [Auth]
+      summary: Start Google OAuth (FR-02)
+      operationId: googleStart
+      security: []
+      responses:
+        '302':
+          description: Redirect to Google's consent screen.
+          headers:
+            Location:
+              schema: { type: string }
+
+  /auth/google/callback:
+    get:
+      tags: [Auth]
+      summary: Google OAuth callback (FR-02)
+      operationId: googleCallback
+      security: []
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema: { type: string }
+        - name: state
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        '302':
+          description: >
+            On success: redirect to the frontend with a token handoff and the
+            refresh cookie set. On failure: redirect to {FE_URL}/login?error=oauth_failed.
+          headers:
+            Location:
+              schema: { type: string }
+            Set-Cookie:
+              schema: { type: string }
+
+  /auth/password-reset/request:
+    post:
+      tags: [Auth]
+      summary: Request a password reset link (FR-04)
+      operationId: requestPasswordReset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '202':
+          description: >
+            Always returned regardless of whether the email exists (no enumeration).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message]
+                properties:
+                  message: { type: string }
+        '429':
+          $ref: './_common.yaml#/components/responses/RateLimited'
+
+  /auth/password-reset/confirm:
+    post:
+      tags: [Auth]
+      summary: Confirm password reset with a token (FR-04)
+      operationId: confirmPasswordReset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, newPassword]
+              properties:
+                token: { type: string }
+                newPassword: { type: string, minLength: 8 }
+      responses:
+        '204':
+          description: Password updated; reset token consumed; sessions revoked.
+        '400':
+          description: 'Reset token invalid (code RESET_TOKEN_INVALID).'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/ApiError' }
+        '422':
+          $ref: './_common.yaml#/components/responses/ValidationError'
+        '429':
+          $ref: './_common.yaml#/components/responses/RateLimited'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: './_common.yaml#/components/securitySchemes/bearerAuth'
+    refreshCookie:
+      $ref: './_common.yaml#/components/securitySchemes/refreshCookie'

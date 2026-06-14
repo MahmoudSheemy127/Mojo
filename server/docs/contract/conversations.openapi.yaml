@@ -1,0 +1,140 @@
+openapi: 3.1.0
+info:
+  title: Chat API — Conversations
+  version: 1.0.0
+  description: >
+    Chat-session list (left column) and opening/creating 1-on-1 DMs. Message
+    content lives in messages.openapi.yaml. Derived from conversations.md.
+
+servers:
+  - url: '{baseUrl}'
+    variables:
+      baseUrl: { default: 'http://localhost:4000/api' }
+
+tags:
+  - name: Conversations
+
+security:
+  - bearerAuth: []
+
+paths:
+  /conversations:
+    get:
+      tags: [Conversations]
+      summary: List conversations (chat sessions)
+      operationId: listConversations
+      description: Sorted by lastActivityAt descending. Includes DMs and groups.
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/Cursor'
+        - $ref: './_common.yaml#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Paginated conversations, most recent first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, nextCursor]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: './_common.yaml#/components/schemas/Conversation' }
+                  nextCursor: { type: [string, "null"] }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+
+  /conversations/dm:
+    post:
+      tags: [Conversations]
+      summary: Open or create a DM (FR-12)
+      operationId: openDm
+      description: >
+        Idempotent. 200 if a DM already exists, 201 if newly created. The two
+        users must be contacts; blocked in either direction → 403 BLOCKED.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              properties:
+                userId: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Existing DM conversation.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/DmConversation' }
+        '201':
+          description: Newly created DM conversation.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/DmConversation' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_common.yaml#/components/responses/NotFound'
+
+  /conversations/{conversationId}:
+    get:
+      tags: [Conversations]
+      summary: Get a single conversation
+      operationId: getConversation
+      description: >
+        Caller must be a participant/member. Non-members get 404 (default) to
+        avoid leaking existence.
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Conversation metadata.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/Conversation' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '404':
+          $ref: './_common.yaml#/components/responses/NotFound'
+
+  /conversations/{conversationId}/read:
+    post:
+      tags: [Conversations]
+      summary: Mark a conversation read (FR-14)
+      operationId: markConversationRead
+      description: >
+        Durable read-marker path. Advances the caller's marker, clears unreadCount,
+        and emits message:status (read) to senders over the socket.
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lastReadMessageId]
+              properties:
+                lastReadMessageId: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Read marker advanced.
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_common.yaml#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: './_common.yaml#/components/securitySchemes/bearerAuth'

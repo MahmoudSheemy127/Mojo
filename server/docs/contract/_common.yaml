@@ -1,0 +1,308 @@
+# Shared OpenAPI components for the Chat API contract.
+# Referenced by every domain spec via:  $ref: './_common.yaml#/components/...'
+# Mirrors README.md (shared entity types, error envelope, conventions).
+openapi: 3.1.0
+info:
+  title: Chat API — Shared Components
+  version: 1.0.0
+  description: >
+    Not a standalone API. Holds the shared schemas, parameters, responses, and
+    security schemes referenced by the per-domain specs (auth, users, contacts,
+    conversations, messages, groups, notifications). Derived from README.md.
+
+# A no-op path so the file is a valid OpenAPI document on its own.
+paths: {}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Short-lived access JWT (≤ 15 min, NF-10) in `Authorization: Bearer <token>`.
+    refreshCookie:
+      type: apiKey
+      in: cookie
+      name: refreshToken
+      description: >
+        Rotating refresh token in an httpOnly, Secure, SameSite=Strict cookie.
+        Consumed only by POST /auth/refresh. Never readable by JS.
+
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema: { type: string }
+      description: Opaque keyset cursor. Omit for the first page.
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 100, default: 30 }
+      description: Page size. Server-capped; default 30.
+
+  schemas:
+    # ── Primitives ────────────────────────────────────────────────
+    Presence:
+      type: string
+      enum: [online, away, dnd, offline]
+
+    MessageStatus:
+      type: string
+      enum: [sent, delivered, read]
+      description: "'sending' is a client-only optimistic state, never sent by the server."
+
+    GroupRole:
+      type: string
+      enum: [admin, member]
+
+    ConversationType:
+      type: string
+      enum: [dm, group]
+
+    Relationship:
+      type: string
+      enum: [none, request_sent, request_received, friends, blocked, blocked_by]
+
+    NotificationType:
+      type: string
+      enum:
+        - friend_request
+        - friend_request_accepted
+        - group_invite
+        - group_join_request
+        - mention
+        - missed_call
+        - generic
+
+    # ── Users ─────────────────────────────────────────────────────
+    PublicUser:
+      type: object
+      required: [id, username, displayName, avatarUrl, bio, presence]
+      properties:
+        id: { type: string, format: uuid }
+        username: { type: string }
+        displayName: { type: string }
+        avatarUrl: { type: [string, "null"] }
+        bio: { type: [string, "null"] }
+        presence: { $ref: '#/components/schemas/Presence' }
+
+    SelfUser:
+      allOf:
+        - $ref: '#/components/schemas/PublicUser'
+        - type: object
+          required: [email, createdAt]
+          properties:
+            email: { type: string, format: email }
+            createdAt: { type: string, format: date-time }
+
+    # ── Attachments & messages ────────────────────────────────────
+    Attachment:
+      type: object
+      required: [id, url, fileName, mimeType, sizeBytes, kind]
+      properties:
+        id: { type: string, format: uuid }
+        url: { type: string }
+        fileName: { type: string }
+        mimeType: { type: string }
+        sizeBytes: { type: integer }
+        kind: { type: string, enum: [image, file] }
+
+    Message:
+      type: object
+      required:
+        [id, conversationId, sequence, senderId, content, attachments, status, createdAt, deletedAt]
+      properties:
+        id: { type: string, format: uuid }
+        conversationId: { type: string, format: uuid }
+        sequence:
+          type: integer
+          format: int64
+          description: Monotonic per conversation; ordering + reconnect-replay cursor.
+        senderId: { type: string, format: uuid }
+        content:
+          type: [string, "null"]
+          description: Null when soft-deleted (FR-16).
+        attachments:
+          type: array
+          items: { $ref: '#/components/schemas/Attachment' }
+        status: { $ref: '#/components/schemas/MessageStatus' }
+        createdAt: { type: string, format: date-time }
+        deletedAt: { type: [string, "null"], format: date-time }
+        clientNonce:
+          type: string
+          description: Echoed back on send to reconcile the optimistic bubble.
+
+    # ── Conversations (discriminated union) ───────────────────────
+    ConversationBase:
+      type: object
+      required: [id, type, lastMessage, lastActivityAt, unreadCount]
+      properties:
+        id: { type: string, format: uuid }
+        type: { $ref: '#/components/schemas/ConversationType' }
+        lastMessage:
+          oneOf:
+            - $ref: '#/components/schemas/Message'
+            - type: "null"
+        lastActivityAt: { type: string, format: date-time }
+        unreadCount: { type: integer }
+
+    DmConversation:
+      allOf:
+        - $ref: '#/components/schemas/ConversationBase'
+        - type: object
+          required: [otherUser]
+          properties:
+            type: { type: string, const: dm }
+            otherUser: { $ref: '#/components/schemas/PublicUser' }
+
+    GroupConversation:
+      allOf:
+        - $ref: '#/components/schemas/ConversationBase'
+        - type: object
+          required: [name, avatarUrl, memberCount, role]
+          properties:
+            type: { type: string, const: group }
+            name: { type: string }
+            avatarUrl: { type: [string, "null"] }
+            memberCount: { type: integer }
+            role: { $ref: '#/components/schemas/GroupRole' }
+
+    Conversation:
+      oneOf:
+        - $ref: '#/components/schemas/DmConversation'
+        - $ref: '#/components/schemas/GroupConversation'
+      discriminator:
+        propertyName: type
+        mapping:
+          dm: '#/components/schemas/DmConversation'
+          group: '#/components/schemas/GroupConversation'
+
+    # ── Groups ────────────────────────────────────────────────────
+    GroupMember:
+      type: object
+      required: [user, role, joinedAt]
+      properties:
+        user: { $ref: '#/components/schemas/PublicUser' }
+        role: { $ref: '#/components/schemas/GroupRole' }
+        joinedAt: { type: string, format: date-time }
+
+    Group:
+      type: object
+      required: [id, name, description, avatarUrl, createdAt, memberCount, role]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: [string, "null"] }
+        avatarUrl: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+        memberCount: { type: integer }
+        role: { $ref: '#/components/schemas/GroupRole' }
+        members:
+          type: array
+          description: Populated on the detail endpoint only.
+          items: { $ref: '#/components/schemas/GroupMember' }
+
+    # ── Contacts ──────────────────────────────────────────────────
+    ContactRequest:
+      type: object
+      required: [id, from, to, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        from: { $ref: '#/components/schemas/PublicUser' }
+        to: { $ref: '#/components/schemas/PublicUser' }
+        createdAt: { type: string, format: date-time }
+
+    # ── Notifications ─────────────────────────────────────────────
+    NotificationPayload:
+      type: object
+      description: Ids let the FE dispatch to the correct action endpoint.
+      properties:
+        requestId: { type: string, format: uuid }
+        inviteId: { type: string, format: uuid }
+        groupId: { type: string, format: uuid }
+        conversationId: { type: string, format: uuid }
+        messageId: { type: string, format: uuid }
+        text: { type: string }
+
+    Notification:
+      type: object
+      required: [id, type, actor, read, createdAt, payload]
+      properties:
+        id: { type: string, format: uuid }
+        type: { $ref: '#/components/schemas/NotificationType' }
+        actor:
+          oneOf:
+            - $ref: '#/components/schemas/PublicUser'
+            - type: "null"
+        read: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        payload: { $ref: '#/components/schemas/NotificationPayload' }
+
+    # ── Search ────────────────────────────────────────────────────
+    UserSearchResult:
+      type: object
+      required: [user, relationship]
+      properties:
+        user: { $ref: '#/components/schemas/PublicUser' }
+        relationship: { $ref: '#/components/schemas/Relationship' }
+
+    # ── Error envelope ────────────────────────────────────────────
+    ApiError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Stable machine code. Switch on this, not message.
+            message: { type: string }
+            details: {}
+
+  responses:
+    # Reusable error responses — each carries the ApiError envelope.
+    BadRequest:
+      description: Malformed request.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    Unauthenticated:
+      description: Missing / invalid / expired token.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    Forbidden:
+      description: Authenticated but not permitted (includes BLOCKED).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    Conflict:
+      description: Duplicate or state conflict.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    ValidationError:
+      description: Well-formed but semantically invalid.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    RateLimited:
+      description: Too many requests (NF-11).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    PayloadTooLarge:
+      description: Uploaded file exceeds the configured limit.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }

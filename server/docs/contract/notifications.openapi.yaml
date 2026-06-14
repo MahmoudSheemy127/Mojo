@@ -1,0 +1,95 @@
+openapi: 3.1.0
+info:
+  title: Chat API — Notifications
+  version: 1.0.0
+  description: >
+    Notification feed and unread count. Actions on actionable notifications live
+    in contacts/groups specs; this file covers reading the feed and clearing the
+    badge. Derived from notifications.md.
+
+servers:
+  - url: '{baseUrl}'
+    variables:
+      baseUrl: { default: 'http://localhost:4000/api' }
+
+tags:
+  - name: Notifications
+
+security:
+  - bearerAuth: []
+
+paths:
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications (FR-30)
+      operationId: listNotifications
+      description: >
+        Newest first. Message notifications are NOT in this feed (they're unread
+        badges on conversations); this feed is invites, requests, mentions, system.
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/Cursor'
+        - $ref: './_common.yaml#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Paginated notifications.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, nextCursor]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: './_common.yaml#/components/schemas/Notification' }
+                  nextCursor: { type: [string, "null"] }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+
+  /notifications/count:
+    get:
+      tags: [Notifications]
+      summary: Unread notification count (FR-30)
+      operationId: getNotificationCount
+      responses:
+        '200':
+          description: Count of unseen notifications (drives the bell badge).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [count]
+                properties:
+                  count: { type: integer }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+
+  /notifications/seen:
+    post:
+      tags: [Notifications]
+      summary: Mark notifications seen (FR-30)
+      operationId: markNotificationsSeen
+      description: >
+        Marks all unseen as seen (or specific ids). Seen ≠ resolved — actionable
+        items remain actionable until accepted/declined via their domain endpoints.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  description: Optional; omit to mark all unseen as seen.
+                  items: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Notifications marked seen; bell badge cleared.
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: './_common.yaml#/components/securitySchemes/bearerAuth'

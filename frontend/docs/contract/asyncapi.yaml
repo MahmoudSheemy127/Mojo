@@ -1,0 +1,373 @@
+asyncapi: 3.0.0
+info:
+  title: Chat API — Realtime (Socket.io)
+  version: 1.0.0
+  description: >
+    The WebSocket half of the contract, derived from realtime.md. REST handles
+    durable writes (persist-before-ack, NF-16); Socket.io handles low-latency
+    delivery and ephemeral signals. OpenAPI cannot express socket events, so the
+    realtime contract lives here. Connection auth: access JWT in the handshake
+    `auth.token`; the server joins the socket to conversation rooms + a personal
+    `user:<id>` room on connect.
+
+servers:
+  production:
+    host: 'app.example.com'
+    protocol: wss
+    description: Same origin as REST in production (Nginx proxies the upgrade).
+  local:
+    host: 'localhost:4000'
+    protocol: ws
+
+defaultContentType: application/json
+
+channels:
+  # Client → Server (ephemeral signals)
+  typingStart:
+    address: 'typing:start'
+    messages:
+      typingStart:
+        $ref: '#/components/messages/TypingSignal'
+  typingStop:
+    address: 'typing:stop'
+    messages:
+      typingStop:
+        $ref: '#/components/messages/TypingSignal'
+  messageRead:
+    address: 'message:read'
+    messages:
+      messageRead:
+        $ref: '#/components/messages/MessageRead'
+
+  # Server → Client
+  messageNew:
+    address: 'message:new'
+    messages:
+      messageNew:
+        $ref: '#/components/messages/MessageNew'
+  messageDeleted:
+    address: 'message:deleted'
+    messages:
+      messageDeleted:
+        $ref: '#/components/messages/MessageDeleted'
+  messageStatus:
+    address: 'message:status'
+    messages:
+      messageStatus:
+        $ref: '#/components/messages/MessageStatus'
+  typingStartOut:
+    address: 'typing:start'
+    messages:
+      typingStartOut:
+        $ref: '#/components/messages/TypingBroadcast'
+  typingStopOut:
+    address: 'typing:stop'
+    messages:
+      typingStopOut:
+        $ref: '#/components/messages/TypingBroadcast'
+  presenceChanged:
+    address: 'presence:changed'
+    messages:
+      presenceChanged:
+        $ref: '#/components/messages/PresenceChanged'
+  notificationNew:
+    address: 'notification:new'
+    messages:
+      notificationNew:
+        $ref: '#/components/messages/NotificationNew'
+  conversationNew:
+    address: 'conversation:new'
+    messages:
+      conversationNew:
+        $ref: '#/components/messages/ConversationNew'
+  groupUpdated:
+    address: 'group:updated'
+    messages:
+      groupUpdated:
+        $ref: '#/components/messages/GroupUpdated'
+  groupDeleted:
+    address: 'group:deleted'
+    messages:
+      groupDeleted:
+        $ref: '#/components/messages/GroupDeleted'
+  memberAdded:
+    address: 'member:added'
+    messages:
+      memberAdded:
+        $ref: '#/components/messages/MemberAdded'
+  memberRemoved:
+    address: 'member:removed'
+    messages:
+      memberRemoved:
+        $ref: '#/components/messages/MemberRemoved'
+  memberRoleChanged:
+    address: 'member:role_changed'
+    messages:
+      memberRoleChanged:
+        $ref: '#/components/messages/MemberRoleChanged'
+
+operations:
+  # Client → Server (the FE sends)
+  sendTypingStart:
+    action: send
+    channel: { $ref: '#/channels/typingStart' }
+  sendTypingStop:
+    action: send
+    channel: { $ref: '#/channels/typingStop' }
+  sendMessageRead:
+    action: send
+    channel: { $ref: '#/channels/messageRead' }
+
+  # Server → Client (the FE receives)
+  receiveMessageNew:
+    action: receive
+    channel: { $ref: '#/channels/messageNew' }
+  receiveMessageDeleted:
+    action: receive
+    channel: { $ref: '#/channels/messageDeleted' }
+  receiveMessageStatus:
+    action: receive
+    channel: { $ref: '#/channels/messageStatus' }
+  receiveTypingStart:
+    action: receive
+    channel: { $ref: '#/channels/typingStartOut' }
+  receiveTypingStop:
+    action: receive
+    channel: { $ref: '#/channels/typingStopOut' }
+  receivePresenceChanged:
+    action: receive
+    channel: { $ref: '#/channels/presenceChanged' }
+  receiveNotificationNew:
+    action: receive
+    channel: { $ref: '#/channels/notificationNew' }
+  receiveConversationNew:
+    action: receive
+    channel: { $ref: '#/channels/conversationNew' }
+  receiveGroupUpdated:
+    action: receive
+    channel: { $ref: '#/channels/groupUpdated' }
+  receiveGroupDeleted:
+    action: receive
+    channel: { $ref: '#/channels/groupDeleted' }
+  receiveMemberAdded:
+    action: receive
+    channel: { $ref: '#/channels/memberAdded' }
+  receiveMemberRemoved:
+    action: receive
+    channel: { $ref: '#/channels/memberRemoved' }
+  receiveMemberRoleChanged:
+    action: receive
+    channel: { $ref: '#/channels/memberRoleChanged' }
+
+components:
+  messages:
+    TypingSignal:
+      name: typingSignal
+      payload:
+        type: object
+        required: [conversationId]
+        properties:
+          conversationId: { type: string, format: uuid }
+    MessageRead:
+      name: messageRead
+      payload:
+        type: object
+        required: [conversationId, lastReadMessageId]
+        properties:
+          conversationId: { type: string, format: uuid }
+          lastReadMessageId: { type: string, format: uuid }
+    MessageNew:
+      name: messageNew
+      payload:
+        type: object
+        required: [message]
+        properties:
+          message: { $ref: '#/components/schemas/Message' }
+    MessageDeleted:
+      name: messageDeleted
+      payload:
+        type: object
+        required: [conversationId, messageId]
+        properties:
+          conversationId: { type: string, format: uuid }
+          messageId: { type: string, format: uuid }
+    MessageStatus:
+      name: messageStatus
+      payload:
+        type: object
+        required: [conversationId, messageId, status, userId]
+        properties:
+          conversationId: { type: string, format: uuid }
+          messageId: { type: string, format: uuid }
+          status: { type: string, enum: [delivered, read] }
+          userId: { type: string, format: uuid }
+    TypingBroadcast:
+      name: typingBroadcast
+      payload:
+        type: object
+        required: [conversationId, userId]
+        properties:
+          conversationId: { type: string, format: uuid }
+          userId: { type: string, format: uuid }
+    PresenceChanged:
+      name: presenceChanged
+      payload:
+        type: object
+        required: [userId, status]
+        properties:
+          userId: { type: string, format: uuid }
+          status: { type: string, enum: [online, away, dnd, offline] }
+    NotificationNew:
+      name: notificationNew
+      payload:
+        type: object
+        required: [notification]
+        properties:
+          notification: { $ref: '#/components/schemas/Notification' }
+    ConversationNew:
+      name: conversationNew
+      payload:
+        type: object
+        required: [conversation]
+        properties:
+          conversation: { $ref: '#/components/schemas/Conversation' }
+    GroupUpdated:
+      name: groupUpdated
+      payload:
+        type: object
+        required: [group]
+        properties:
+          group: { $ref: '#/components/schemas/Group' }
+    GroupDeleted:
+      name: groupDeleted
+      payload:
+        type: object
+        required: [groupId]
+        properties:
+          groupId: { type: string, format: uuid }
+    MemberAdded:
+      name: memberAdded
+      payload:
+        type: object
+        required: [groupId, member]
+        properties:
+          groupId: { type: string, format: uuid }
+          member: { $ref: '#/components/schemas/GroupMember' }
+    MemberRemoved:
+      name: memberRemoved
+      payload:
+        type: object
+        required: [groupId, userId]
+        properties:
+          groupId: { type: string, format: uuid }
+          userId: { type: string, format: uuid }
+    MemberRoleChanged:
+      name: memberRoleChanged
+      payload:
+        type: object
+        required: [groupId, userId, role]
+        properties:
+          groupId: { type: string, format: uuid }
+          userId: { type: string, format: uuid }
+          role: { type: string, enum: [admin, member] }
+
+  # Schemas mirror README.md shared types. Kept inline because AsyncAPI tooling
+  # does not resolve cross-document OpenAPI $refs; keep these in sync with _common.yaml.
+  schemas:
+    Presence:
+      type: string
+      enum: [online, away, dnd, offline]
+    PublicUser:
+      type: object
+      required: [id, username, displayName, avatarUrl, bio, presence]
+      properties:
+        id: { type: string, format: uuid }
+        username: { type: string }
+        displayName: { type: string }
+        avatarUrl: { type: [string, "null"] }
+        bio: { type: [string, "null"] }
+        presence: { $ref: '#/components/schemas/Presence' }
+    Attachment:
+      type: object
+      required: [id, url, fileName, mimeType, sizeBytes, kind]
+      properties:
+        id: { type: string, format: uuid }
+        url: { type: string }
+        fileName: { type: string }
+        mimeType: { type: string }
+        sizeBytes: { type: integer }
+        kind: { type: string, enum: [image, file] }
+    Message:
+      type: object
+      required: [id, conversationId, sequence, senderId, content, attachments, status, createdAt, deletedAt]
+      properties:
+        id: { type: string, format: uuid }
+        conversationId: { type: string, format: uuid }
+        sequence: { type: integer, format: int64 }
+        senderId: { type: string, format: uuid }
+        content: { type: [string, "null"] }
+        attachments:
+          type: array
+          items: { $ref: '#/components/schemas/Attachment' }
+        status: { type: string, enum: [sent, delivered, read] }
+        createdAt: { type: string, format: date-time }
+        deletedAt: { type: [string, "null"], format: date-time }
+    Conversation:
+      type: object
+      description: DM or group; see README.md discriminated union.
+      required: [id, type, lastMessage, lastActivityAt, unreadCount]
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string, enum: [dm, group] }
+        lastMessage:
+          oneOf:
+            - $ref: '#/components/schemas/Message'
+            - type: "null"
+        lastActivityAt: { type: string, format: date-time }
+        unreadCount: { type: integer }
+        otherUser: { $ref: '#/components/schemas/PublicUser' }
+        name: { type: string }
+        avatarUrl: { type: [string, "null"] }
+        memberCount: { type: integer }
+        role: { type: string, enum: [admin, member] }
+    GroupMember:
+      type: object
+      required: [user, role, joinedAt]
+      properties:
+        user: { $ref: '#/components/schemas/PublicUser' }
+        role: { type: string, enum: [admin, member] }
+        joinedAt: { type: string, format: date-time }
+    Group:
+      type: object
+      required: [id, name, description, avatarUrl, createdAt, memberCount, role]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: [string, "null"] }
+        avatarUrl: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+        memberCount: { type: integer }
+        role: { type: string, enum: [admin, member] }
+    Notification:
+      type: object
+      required: [id, type, actor, read, createdAt, payload]
+      properties:
+        id: { type: string, format: uuid }
+        type:
+          type: string
+          enum: [friend_request, friend_request_accepted, group_invite, group_join_request, mention, missed_call, generic]
+        actor:
+          oneOf:
+            - $ref: '#/components/schemas/PublicUser'
+            - type: "null"
+        read: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        payload:
+          type: object
+          properties:
+            requestId: { type: string, format: uuid }
+            inviteId: { type: string, format: uuid }
+            groupId: { type: string, format: uuid }
+            conversationId: { type: string, format: uuid }
+            messageId: { type: string, format: uuid }
+            text: { type: string }

@@ -1,0 +1,245 @@
+openapi: 3.1.0
+info:
+  title: Chat API — Contacts
+  version: 1.0.0
+  description: >
+    Friendship/contact graph: requests, accept/decline, removal, blocking.
+    Derived from contacts.md. The block check is a cross-cutting guard enforced
+    here and in search, DM creation, message send, and group invites.
+
+servers:
+  - url: '{baseUrl}'
+    variables:
+      baseUrl: { default: 'http://localhost:4000/api' }
+
+tags:
+  - name: Contacts
+
+security:
+  - bearerAuth: []
+
+paths:
+  /contacts:
+    get:
+      tags: [Contacts]
+      summary: List friends (FR-06)
+      operationId: listFriends
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/Cursor'
+        - $ref: './_common.yaml#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Paginated friends, each with live-ish presence.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, nextCursor]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: './_common.yaml#/components/schemas/PublicUser' }
+                  nextCursor: { type: [string, "null"] }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+
+  /contacts/requests:
+    get:
+      tags: [Contacts]
+      summary: List pending requests (FR-06)
+      operationId: listContactRequests
+      responses:
+        '200':
+          description: Incoming and outgoing pending requests.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [incoming, outgoing]
+                properties:
+                  incoming:
+                    type: array
+                    items: { $ref: './_common.yaml#/components/schemas/ContactRequest' }
+                  outgoing:
+                    type: array
+                    items: { $ref: './_common.yaml#/components/schemas/ContactRequest' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+    post:
+      tags: [Contacts]
+      summary: Send a friend request (FR-06)
+      operationId: sendFriendRequest
+      description: >
+        If the target already sent the caller a request, the server auto-accepts
+        and both become friends. Blocked in either direction → 403 BLOCKED.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              properties:
+                userId: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Pending request created (or friendship if auto-accepted).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/ContactRequest' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_common.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_common.yaml#/components/responses/Conflict'
+        '429':
+          $ref: './_common.yaml#/components/responses/RateLimited'
+
+  /contacts/requests/{requestId}/accept:
+    post:
+      tags: [Contacts]
+      summary: Accept a friend request (FR-06)
+      operationId: acceptFriendRequest
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Friendship created.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [friend]
+                properties:
+                  friend: { $ref: './_common.yaml#/components/schemas/PublicUser' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_common.yaml#/components/responses/NotFound'
+
+  /contacts/requests/{requestId}/decline:
+    post:
+      tags: [Contacts]
+      summary: Decline a friend request (FR-06)
+      operationId: declineFriendRequest
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Request removed; no friendship created.
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_common.yaml#/components/responses/NotFound'
+
+  /contacts/{userId}:
+    delete:
+      tags: [Contacts]
+      summary: Remove a contact (FR-07)
+      operationId: removeContact
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Friendship removed symmetrically.
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '404':
+          $ref: './_common.yaml#/components/responses/NotFound'
+
+  /contacts/blocks:
+    post:
+      tags: [Contacts]
+      summary: Block a user (FR-08)
+      operationId: blockUser
+      description: >
+        Server-enforced (NF-13): blocked pair cannot message, search, or invite
+        each other; existing friendship/requests are removed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              properties:
+                userId: { type: string, format: uuid }
+      responses:
+        '201':
+          description: User blocked.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [blockedUser]
+                properties:
+                  blockedUser: { $ref: './_common.yaml#/components/schemas/PublicUser' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '404':
+          $ref: './_common.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_common.yaml#/components/responses/Conflict'
+
+  /contacts/blocked:
+    get:
+      tags: [Contacts]
+      summary: List blocked users (FR-09)
+      operationId: listBlocked
+      parameters:
+        - $ref: './_common.yaml#/components/parameters/Cursor'
+        - $ref: './_common.yaml#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Paginated blocked users.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, nextCursor]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: './_common.yaml#/components/schemas/PublicUser' }
+                  nextCursor: { type: [string, "null"] }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+
+  /contacts/blocks/{userId}:
+    delete:
+      tags: [Contacts]
+      summary: Unblock a user (FR-09)
+      operationId: unblockUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Block removed (no friendship restored).
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '404':
+          $ref: './_common.yaml#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: './_common.yaml#/components/securitySchemes/bearerAuth'

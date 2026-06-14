@@ -1,0 +1,187 @@
+openapi: 3.1.0
+info:
+  title: Chat API — Users
+  version: 1.0.0
+  description: >
+    Current user's profile, avatar, presence, and user search. Derived from users.md.
+
+servers:
+  - url: '{baseUrl}'
+    variables:
+      baseUrl: { default: 'http://localhost:4000/api' }
+
+tags:
+  - name: Users
+
+security:
+  - bearerAuth: []
+
+paths:
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get current user
+      operationId: getMe
+      responses:
+        '200':
+          description: The authenticated user.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/SelfUser' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+    patch:
+      tags: [Users]
+      summary: Update profile (FR-11)
+      operationId: updateProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName: { type: string, minLength: 1, maxLength: 50 }
+                bio: { type: [string, "null"], maxLength: 190 }
+      responses:
+        '200':
+          description: Updated profile.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/SelfUser' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '422':
+          $ref: './_common.yaml#/components/responses/ValidationError'
+
+  /users/me/avatar:
+    put:
+      tags: [Users]
+      summary: Upload avatar (FR-11)
+      operationId: uploadAvatar
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '200':
+          description: New avatar URL.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [avatarUrl]
+                properties:
+                  avatarUrl: { type: string }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '413':
+          $ref: './_common.yaml#/components/responses/PayloadTooLarge'
+        '422':
+          $ref: './_common.yaml#/components/responses/ValidationError'
+    delete:
+      tags: [Users]
+      summary: Remove avatar (FR-11)
+      operationId: deleteAvatar
+      responses:
+        '204':
+          description: Avatar removed; reverts to initials fallback.
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+
+  /users/me/presence:
+    patch:
+      tags: [Users]
+      summary: Set presence status (FR-10)
+      operationId: setPresence
+      description: >
+        'offline' is set automatically on socket disconnect — not settable here.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [online, away, dnd] }
+      responses:
+        '200':
+          description: Updated presence.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [presence]
+                properties:
+                  presence: { $ref: './_common.yaml#/components/schemas/Presence' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '422':
+          $ref: './_common.yaml#/components/responses/ValidationError'
+
+  /users/search:
+    get:
+      tags: [Users]
+      summary: Search users by username (FR-05)
+      operationId: searchUsers
+      description: >
+        Case-insensitive partial match. Excludes the caller and any users in a
+        block relationship (either direction), server-side.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 1 }
+        - $ref: './_common.yaml#/components/parameters/Cursor'
+        - $ref: './_common.yaml#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Paginated search results with per-row relationship.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, nextCursor]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: './_common.yaml#/components/schemas/UserSearchResult' }
+                  nextCursor: { type: [string, "null"] }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '422':
+          $ref: './_common.yaml#/components/responses/ValidationError'
+        '429':
+          $ref: './_common.yaml#/components/responses/RateLimited'
+
+  /users/{userId}:
+    get:
+      tags: [Users]
+      summary: Get a user's public profile
+      operationId: getUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Public profile.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/PublicUser' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '404':
+          $ref: './_common.yaml#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: './_common.yaml#/components/securitySchemes/bearerAuth'

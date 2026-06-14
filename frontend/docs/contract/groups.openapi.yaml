@@ -1,0 +1,372 @@
+openapi: 3.1.0
+info:
+  title: Chat API — Groups
+  version: 1.0.0
+  description: >
+    Group lifecycle: create/update/delete, members, roles, invites/links, leave.
+    Derived from groups.md. Two business rules are flagged for Phase 4: the
+    last-admin rule and the join-approval model (the join-request endpoints are
+    conditional on adopting admin approval).
+
+servers:
+  - url: '{baseUrl}'
+    variables:
+      baseUrl: { default: 'http://localhost:4000/api' }
+
+tags:
+  - name: Groups
+
+security:
+  - bearerAuth: []
+
+paths:
+  /groups:
+    post:
+      tags: [Groups]
+      summary: Create a group (FR-18)
+      operationId: createGroup
+      description: Creator becomes the first admin. Non-contact/blocked memberIds rejected.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 80 }
+                description: { type: string, maxLength: 300 }
+                avatarId: { type: string, format: uuid }
+                memberIds:
+                  type: array
+                  items: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Group created; caller's role is admin.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/Group' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+        '422':
+          $ref: './_common.yaml#/components/responses/ValidationError'
+
+  /groups/{groupId}:
+    get:
+      tags: [Groups]
+      summary: Get group detail
+      operationId: getGroup
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '200':
+          description: Group with members populated.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/Group' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_common.yaml#/components/responses/NotFound'
+    patch:
+      tags: [Groups]
+      summary: Update group profile (FR-23) — Admin
+      operationId: updateGroup
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, minLength: 1, maxLength: 80 }
+                description: { type: [string, "null"], maxLength: 300 }
+                avatarId: { type: [string, "null"], format: uuid }
+      responses:
+        '200':
+          description: Updated group.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/Group' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+        '422':
+          $ref: './_common.yaml#/components/responses/ValidationError'
+    delete:
+      tags: [Groups]
+      summary: Delete group (FR-18 lifecycle) — Admin
+      operationId: deleteGroup
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '204':
+          description: Group deleted for all members.
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+
+  /groups/{groupId}/members:
+    get:
+      tags: [Groups]
+      summary: List members
+      operationId: listGroupMembers
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: './_common.yaml#/components/parameters/Cursor'
+        - $ref: './_common.yaml#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Paginated members.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, nextCursor]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: './_common.yaml#/components/schemas/GroupMember' }
+                  nextCursor: { type: [string, "null"] }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+    post:
+      tags: [Groups]
+      summary: Add / invite members (FR-19) — Admin or per policy
+      operationId: addGroupMembers
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userIds]
+              properties:
+                userIds:
+                  type: array
+                  items: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Members added and/or invited.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [added, invited]
+                properties:
+                  added:
+                    type: array
+                    items: { $ref: './_common.yaml#/components/schemas/GroupMember' }
+                  invited:
+                    type: array
+                    items: { $ref: './_common.yaml#/components/schemas/PublicUser' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+        '422':
+          $ref: './_common.yaml#/components/responses/ValidationError'
+
+  /groups/{groupId}/members/{userId}:
+    patch:
+      tags: [Groups]
+      summary: Change member role (FR-20) — Admin
+      operationId: changeMemberRole
+      description: Server prevents demoting the last admin → 409 LAST_ADMIN.
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role: { $ref: './_common.yaml#/components/schemas/GroupRole' }
+      responses:
+        '200':
+          description: Updated member.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/GroupMember' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+        '409':
+          $ref: './_common.yaml#/components/responses/Conflict'
+    delete:
+      tags: [Groups]
+      summary: Remove a member (FR-21) / leave a group (FR-22)
+      operationId: removeGroupMember
+      description: >
+        One endpoint, authorization branches on target. If :userId is another
+        member → caller must be Admin (remove). If :userId is self → any member
+        may leave. Last-admin case → 409 LAST_ADMIN or auto-promote (Phase 4 rule).
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '204':
+          description: Member removed / left.
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_common.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_common.yaml#/components/responses/Conflict'
+
+  /groups/{groupId}/invite-link:
+    post:
+      tags: [Groups]
+      summary: Generate an invite link (FR-19) — Admin or per policy
+      operationId: createInviteLink
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '201':
+          description: Shareable invite link.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url, token, expiresAt]
+                properties:
+                  url: { type: string }
+                  token: { type: string }
+                  expiresAt: { type: [string, "null"], format: date-time }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+
+  /groups/join:
+    post:
+      tags: [Groups]
+      summary: Join via invite link (FR-19)
+      operationId: joinByLink
+      description: >
+        200/201 with the group if joined directly; 202 { pending: true } if the
+        join needs admin approval (creates a group_join_request).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [inviteToken]
+              properties:
+                inviteToken: { type: string }
+      responses:
+        '200':
+          description: Joined an existing membership state (idempotent path).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/Group' }
+        '201':
+          description: Joined the group directly.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/Group' }
+        '202':
+          description: Join request created; pending admin approval.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [pending]
+                properties:
+                  pending: { type: boolean, const: true }
+        '400':
+          description: 'Invite invalid (code INVITE_INVALID).'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/ApiError' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+        '409':
+          $ref: './_common.yaml#/components/responses/Conflict'
+
+  /groups/{groupId}/join-requests/{requestId}/accept:
+    post:
+      tags: [Groups]
+      summary: Accept a join request (FR-19, conditional) — Admin
+      operationId: acceptJoinRequest
+      description: Exists only if the admin-approval join model is adopted (FLAG #3).
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: Request accepted; member added.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [member]
+                properties:
+                  member: { $ref: './_common.yaml#/components/schemas/GroupMember' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_common.yaml#/components/responses/NotFound'
+
+  /groups/{groupId}/join-requests/{requestId}/decline:
+    post:
+      tags: [Groups]
+      summary: Decline a join request (FR-19, conditional) — Admin
+      operationId: declineJoinRequest
+      description: Exists only if the admin-approval join model is adopted (FLAG #3).
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '204':
+          description: Request declined.
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_common.yaml#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: './_common.yaml#/components/securitySchemes/bearerAuth'
+  parameters:
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    RequestId:
+      name: requestId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }

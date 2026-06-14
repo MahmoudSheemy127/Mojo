@@ -1,0 +1,155 @@
+openapi: 3.1.0
+info:
+  title: Chat API — Messages
+  version: 1.0.0
+  description: >
+    Message history, sending, soft-deleting, and attachments. Realtime delivery
+    is in asyncapi.yaml. Derived from messages.md. Persist-before-ack (NF-16):
+    the 201 is returned only after the row is committed.
+
+servers:
+  - url: '{baseUrl}'
+    variables:
+      baseUrl: { default: 'http://localhost:4000/api' }
+
+tags:
+  - name: Messages
+
+security:
+  - bearerAuth: []
+
+paths:
+  /conversations/{conversationId}/messages:
+    get:
+      tags: [Messages]
+      summary: Fetch message history (FR-13)
+      operationId: listMessages
+      description: >
+        Paginates backward in time. data is ordered oldest→newest within the page;
+        nextCursor points to the next older page (null at the start of history).
+        Soft-deleted messages appear with content null and deletedAt set.
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: './_common.yaml#/components/parameters/Cursor'
+        - $ref: './_common.yaml#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Paginated message page.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, nextCursor]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: './_common.yaml#/components/schemas/Message' }
+                  nextCursor: { type: [string, "null"] }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_common.yaml#/components/responses/NotFound'
+    post:
+      tags: [Messages]
+      summary: Send a message (FR-13)
+      operationId: sendMessage
+      description: >
+        Persisted before the 201 is returned. Server assigns id/sequence/createdAt
+        and emits message:new to other participants. @mentions create notifications.
+        At least one of content (non-empty) or attachmentIds must be present.
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content: { type: [string, "null"] }
+                attachmentIds:
+                  type: array
+                  items: { type: string, format: uuid }
+                clientNonce: { type: string }
+      responses:
+        '201':
+          description: Persisted message (the durable ack).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/Message' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_common.yaml#/components/responses/NotFound'
+        '413':
+          $ref: './_common.yaml#/components/responses/PayloadTooLarge'
+        '422':
+          $ref: './_common.yaml#/components/responses/ValidationError'
+
+  /messages/{messageId}:
+    delete:
+      tags: [Messages]
+      summary: Soft-delete a message (FR-16)
+      operationId: deleteMessage
+      description: >
+        Only the sender may delete. Sets deletedAt, nulls content/attachments;
+        the row remains so the placeholder renders. Emits message:deleted.
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Message soft-deleted.
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_common.yaml#/components/responses/NotFound'
+
+  /attachments:
+    post:
+      tags: [Messages]
+      summary: Upload an attachment (FR-17, P3)
+      operationId: uploadAttachment
+      description: >
+        Two-step: upload returns an id, then reference it in attachmentIds on send.
+        Requires object storage — may be stubbed/disabled until P3.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '201':
+          description: Stored attachment metadata.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/components/schemas/Attachment' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '413':
+          $ref: './_common.yaml#/components/responses/PayloadTooLarge'
+        '422':
+          $ref: './_common.yaml#/components/responses/ValidationError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: './_common.yaml#/components/securitySchemes/bearerAuth'

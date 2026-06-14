@@ -1,0 +1,336 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─────────────────────────── Enums ───────────────────────────
+
+enum Presence {
+  ONLINE
+  AWAY
+  DND
+  OFFLINE
+}
+
+enum ConversationType {
+  DM
+  GROUP
+}
+
+enum GroupRole {
+  ADMIN
+  MEMBER
+}
+
+enum TokenType {
+  REFRESH          // rotating; uses revokedAt + replacedById
+  PASSWORD_RESET   // single-use; uses usedAt
+}
+
+enum AttachmentKind {
+  IMAGE
+  FILE
+}
+
+enum RequestType {
+  FRIEND_REQUEST       // groupId is null
+  GROUP_INVITE         // groupId set
+  GROUP_JOIN_REQUEST   // groupId set; used only if join-approval model is adopted
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum NotificationType {
+  FRIEND_REQUEST
+  FRIEND_REQUEST_ACCEPTED
+  GROUP_INVITE
+  GROUP_JOIN_REQUEST
+  MENTION
+  MISSED_CALL          // only if voice is in scope (UI FLAG #1)
+  GENERIC
+}
+
+enum RelationType {
+  FRIEND   // symmetric in meaning; stored as a directed edge (see note 5)
+  BLOCK    // directional: owner blocked related
+}
+
+// ─────────────────────────── Identity ───────────────────────────
+
+model User {
+  id          String    @id @default(uuid())
+  displayName String
+  avatarUrl   String?
+  bio         String?
+  presence    Presence  @default(OFFLINE)
+  lastSeenAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  account             Account?
+  tokens              Token[]
+  messages            Message[] // as sender
+  uploadedAttachments Attachment[]
+  memberships         Member[]
+  userChats           UserChat[]
+  conversationReads   ConversationRead[]
+  sentRequests        Request[]          @relation("RequestSource")
+  receivedRequests    Request[]          @relation("RequestTarget")
+  notifications       Notification[]     @relation("NotificationRecipient")
+  actedNotifications  Notification[]     @relation("NotificationActor")
+  relationsOwned      Relation[]         @relation("RelationOwner")
+  relationsTargeting  Relation[]         @relation("RelationRelated")
+  createdInviteLinks  GroupInviteLink[]
+
+  @@map("users")
+}
+
+model Account {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  username     String   @unique // login identifier; also used by user search
+  email        String   @unique
+  passwordHash String? // null when the account is OAuth-only
+  createdAt    DateTime @default(now())
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  oauthAccounts OAuthAccount[]
+
+  @@map("accounts")
+}
+
+model OAuthAccount {
+  id             String   @id @default(uuid())
+  accountId      String
+  provider       String // 'google'
+  providerUserId String
+  createdAt      DateTime @default(now())
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([accountId])
+  @@map("oauth_accounts")
+}
+
+model Token {
+  id           String    @id @default(uuid())
+  userId       String
+  type         TokenType
+  tokenHash    String    @unique // store a hash, never the raw token
+  expiresAt    DateTime
+  revokedAt    DateTime? // refresh: revoked on logout / rotation
+  usedAt       DateTime? // password reset: single-use marker
+  replacedById String? // refresh rotation chain
+  createdAt    DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("tokens")
+}
+
+// ─────────────────────────── Conversations & messages ───────────────────────────
+
+model Conversation {
+  id             String           @id @default(uuid())
+  type           ConversationType
+  lastMessageId  String?          @unique // denormalized pointer for list previews
+  lastActivityAt DateTime         @default(now())
+  dmKey          String?          @unique // canonical sorted "userA:userB"; enforces one DM per pair (note 4)
+  createdAt      DateTime         @default(now())
+
+  messages    Message[]          @relation("ConversationMessages")
+  lastMessage Message?           @relation("LastMessage", fields: [lastMessageId], references: [id])
+  group       Group?
+  userChats   UserChat[]
+  reads       ConversationRead[]
+
+  @@index([lastActivityAt])
+  @@map("conversations")
+}
+
+model Group {
+  id             String   @id @default(uuid())
+  conversationId String   @unique // 1:1 — a group IS a conversation
+  name           String
+  description    String?
+  avatarUrl      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  conversation Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  members      Member[]
+  requests     Request[] // invites / join requests scoped to this group
+  inviteLinks  GroupInviteLink[]
+
+  @@map("groups")
+}
+
+model Member {
+  id       String    @id @default(uuid())
+  userId   String
+  groupId  String
+  role     GroupRole @default(MEMBER)
+  joinedAt DateTime  @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId]) // one membership per user per group
+  @@index([groupId])
+  @@map("members")
+}
+
+// DM participants only (groups are reached via Member). See note 6.
+model UserChat {
+  id             String   @id @default(uuid())
+  userId         String
+  conversationId String
+  joinedAt       DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conversationId])
+  @@index([conversationId])
+  @@map("user_chats")
+}
+
+// Read marker per user per conversation — spans BOTH DMs and groups. Drives unread counts.
+model ConversationRead {
+  id                String   @id @default(uuid())
+  userId            String
+  conversationId    String
+  lastReadMessageId String?
+  lastReadAt        DateTime @default(now())
+
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  lastReadMessage Message?     @relation("ReadMarker", fields: [lastReadMessageId], references: [id])
+
+  @@unique([userId, conversationId])
+  @@index([conversationId])
+  @@map("conversation_reads")
+}
+
+model Message {
+  /// ULID — lexicographically sortable; assigned in the app layer on create (note 3)
+  id             String    @id
+  conversationId String
+  senderId       String
+  content        String? // null when soft-deleted (FR-16)
+  createdAt      DateTime  @default(now())
+  deletedAt      DateTime?
+
+  conversation  Conversation       @relation("ConversationMessages", fields: [conversationId], references: [id], onDelete: Cascade)
+  sender        User               @relation(fields: [senderId], references: [id])
+  attachments   Attachment[]
+  lastMessageOf Conversation?      @relation("LastMessage")
+  readMarkers   ConversationRead[] @relation("ReadMarker")
+
+  @@index([conversationId, id]) // keyset pagination + reconnect cursor (note 3)
+  @@index([senderId])
+  @@map("messages")
+}
+
+model Attachment {
+  id         String         @id @default(uuid())
+  messageId  String? // null until the message is sent (upload-before-send, FR-17)
+  uploaderId String
+  url        String
+  fileName   String
+  mimeType   String
+  sizeBytes  Int
+  kind       AttachmentKind
+  createdAt  DateTime       @default(now())
+
+  message  Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  uploader User     @relation(fields: [uploaderId], references: [id])
+
+  @@index([messageId])
+  @@map("attachments")
+}
+
+// ─────────────────────────── Social graph ───────────────────────────
+
+// Unified request entity: friend requests, group invites, and join requests.
+model Request {
+  id           String        @id @default(uuid())
+  sourceUserId String // initiator
+  targetUserId String // recipient
+  groupId      String? // null for FRIEND_REQUEST
+  type         RequestType
+  status       RequestStatus @default(PENDING)
+  createdAt    DateTime      @default(now())
+  respondedAt  DateTime?
+
+  sourceUser   User          @relation("RequestSource", fields: [sourceUserId], references: [id], onDelete: Cascade)
+  targetUser   User          @relation("RequestTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  group        Group?        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  notification Notification? // 0..1 (note 5)
+
+  @@index([targetUserId, status])
+  @@index([sourceUserId])
+  @@index([groupId])
+  @@map("requests")
+}
+
+model Notification {
+  id          String           @id @default(uuid())
+  recipientId String
+  requestId   String?          @unique // 0..1 — set only for request-backed notifications
+  actorId     String? // who triggered it; null for system
+  type        NotificationType
+  payload     Json? // mention target, generic text, ids, etc.
+  read        Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  recipient User     @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actor     User?    @relation("NotificationActor", fields: [actorId], references: [id])
+  request   Request? @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, read, createdAt])
+  @@map("notifications")
+}
+
+// Directed edge. FRIEND = symmetric meaning; BLOCK = owner blocked related (note 7).
+model Relation {
+  id        String       @id @default(uuid())
+  ownerId   String
+  relatedId String
+  type      RelationType
+  createdAt DateTime     @default(now())
+
+  owner   User @relation("RelationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  related User @relation("RelationRelated", fields: [relatedId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, relatedId, type])
+  @@index([relatedId, type]) // reverse lookups: "who blocked me", friends-of
+  @@map("relations")
+}
+
+model GroupInviteLink {
+  id          String    @id @default(uuid())
+  groupId     String
+  token       String    @unique
+  createdById String
+  expiresAt   DateTime?
+  maxUses     Int?
+  useCount    Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  group     Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy User  @relation(fields: [createdById], references: [id])
+
+  @@index([groupId])
+  @@map("group_invite_links")
+}

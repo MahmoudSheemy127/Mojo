@@ -1,0 +1,46 @@
+/* src/styles/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Mapped to Tailwind tokens for any CSS-var consumers */
+    --bg-deepest:  #1e1f22;
+    --bg-sidebar:  #2b2d31;
+    --bg-chat:     #313338;
+    --bg-hover:    #35373c;
+    --bg-active:   #404249;
+    --text-normal: #dbdee1;
+    --text-muted:  #949ba4;
+    --accent:      #5865f2;
+    --danger:      #da373c;
+    --online:      #23a55a;
+    --idle:        #f0b232;
+    --dnd:         #f23f43;
+    --offline:     #80848e;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+  }
+
+  /* Scrollbar — Discord-style slim track */
+  ::-webkit-scrollbar       { width: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--bg-active);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+}
