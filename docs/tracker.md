@@ -27,12 +27,12 @@
 - [ ] Config + env validation (fail fast on missing var)
 
 **Frontend scaffolding (Setup):**
-- [ ] Vite + React + TS (strict) structure + providers shell (Query, Router, socket)
-- [ ] Tailwind theme tokens (Discord-like), design-system atoms (`components/ui`)
-- [ ] Observability: Sentry client
+- [x] Vite + React + TS (strict) structure + providers shell (Query, Router, socket)
+- [x] Tailwind theme tokens (Discord-like), design-system atoms (`components/ui`)
+- [x] Observability: Sentry client
 
 **Shared:**
-- [ ] Version control + branch strategy
+- [x] Version control + branch strategy
 - [ ] CI/CD backend (typecheck, lint, test, build; gate scripts wired)
 - [ ] CI/CD frontend (typecheck, lint, test, build; `contract:types` step)
 - [ ] **Integration check** — minimal `/ping` controller + Eden/Axios call proving FE↔BE type-safe link
@@ -44,9 +44,9 @@
 
 ## Stage 2 — Auth  ·  FR-01–04
 
-- [ ] Signup
-- [ ] Login
-- [ ] Refresh (rotating refresh token, httpOnly cookie)
+- [x] Signup
+- [x] Login
+- [x] Refresh (rotating refresh token, httpOnly cookie)
 - [ ] Sign out (revoke refresh token, NF-03)
 - [ ] Password reset — request link
 - [ ] Password reset — confirm (single-use token, revoke sessions)
@@ -62,14 +62,14 @@
 
 ## Stage 3 — Users  ·  FR-05, FR-10, FR-11
 
-- [ ] Fetch own profile (`GET /users/me`)
-- [ ] Update profile (display name, bio)
-- [ ] **Avatar upload** (`PUT /users/me/avatar`) + remove
-- [ ] Update presence status:
-  - [ ] Persistence layer (`PATCH /users/me/presence`)
-  - [ ] Socket broadcast `presence:changed` → Stage 5 (needs socket layer)
-- [ ] Search users (block-filtered, paginated)
-- [ ] Visit a user's public profile
+- [x] Fetch own profile (`GET /users/me`)
+- [x] Update profile (display name, bio)
+- [x] **Avatar upload** (`PUT /users/me/avatar`) + remove
+- [x] Update presence status:
+- [x] Persistence layer (`PATCH /users/me/presence`)
+- [x] Socket broadcast `presence:changed` → Stage 5 (needs socket layer)
+- [x] Search users (block-filtered, paginated)
+- [x] Visit a user's public profile
 
 > **Deliverable:** Profile view/edit incl. avatar; user search excludes blocked users;
 > presence persists (live broadcast lands in Stage 5).

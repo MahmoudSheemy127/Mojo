@@ -7,6 +7,9 @@ node_modules/
 dist/
 build/
 
+# ── Local avatar/object storage (P3: replaced by S3/R2) ───────
+uploads/
+
 # ── Environment & secrets ──────────────────────────────────────
 .env
 .env.local

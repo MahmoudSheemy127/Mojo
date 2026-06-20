@@ -12,10 +12,15 @@ import { configuration } from './config/configuration';
 import { validateEnv } from './config/env.validation';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { ContactsModule } from './modules/contacts/contacts.module';
 import { HealthModule } from './health/health.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
+import { RealtimeModule } from '@modules/realtime/realtime.module';
+import { PresenceModule } from '@modules/presence/presence.module';
+import { RedisModule } from '@redis/redis.module';
 
 @Module({
   imports: [
@@ -81,7 +86,12 @@ import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter'
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     PrismaModule,
     AuthModule,
+    UsersModule,
+    ContactsModule,
     HealthModule,
+    RealtimeModule,
+    PresenceModule,
+    RedisModule
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard }, // auth by default; @Public() opts out

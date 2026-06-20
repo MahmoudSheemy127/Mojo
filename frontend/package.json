@@ -3,31 +3,26 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-"scripts": {
-
-  "dev":          "vite",
-  "build":        "tsc --noEmit && vite build",
-  "preview":      "vite preview",
-
-
-  "typecheck":    "tsc --noEmit",
-  "lint":         "eslint .",
-  "lint:fix":     "eslint . --fix",
-  "format":       "prettier --write \"src/**/*.{ts,tsx,css}\" \"e2e/**/*.ts\"",
-
-
-  "test":         "vitest run",
-  "test:watch":   "vitest",
-  "test:cov":     "vitest run --coverage",
-  "test:e2e":     "playwright test",
-  "test:e2e:ui":  "playwright test --ui",
-  "test:e2e:debug": "playwright test --debug",
-
-  "gate:scaffold": "npm ci && npm run build && npm run typecheck && npm run lint && node scripts/check-structure.mjs",
-  "gate:frontend": "npm run typecheck && npm run lint && npm run test:cov",
-  "gate:e2e":      "npm run test:e2e",
-  "gate:fe-feature":"npm run gate:scaffold && npm run gate:frontend"
-},
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"e2e/**/*.ts\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "contract:types": "openapi-typescript docs/contract/auth.openapi.yaml -o src/types/api.generated.ts",
+    "gate:scaffold": "npm ci && npm run contract:types && npm run build && npm run typecheck && npm run lint && node scripts/check-structure.mjs",
+    "gate:frontend": "npm run contract:types && npm run typecheck && npm run lint && npm run test:cov",
+    "gate:e2e": "npm run test:e2e",
+    "gate:fe-feature": "npm run gate:scaffold && npm run gate:frontend"
+  },
   "dependencies": {
     "@tanstack/react-query": "^5.101.0",
     "axios": "^1.17.0",
@@ -44,6 +39,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.60.0",
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
@@ -60,10 +56,12 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
     "jsdom": "^29.1.1",
+    "msw": "^2.14.6",
+    "openapi-typescript": "^7.13.0",
     "postcss": "^8.5.15",
     "prettier": "^3.8.4",
     "prettier-plugin-tailwindcss": "^0.8.0",
-    "tailwindcss": "^4.3.1",
+    "tailwindcss": "^3.4.19",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.16",

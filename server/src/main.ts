@@ -8,6 +8,7 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
 import { AppModule } from './app.module';
+import { RedisIoAdapter } from '@modules/realtime/adapters/redis-io.adapter';
 
 async function bootstrap() {
   // bufferLogs holds early framework logs until the pino logger is attached.
@@ -15,6 +16,10 @@ async function bootstrap() {
   app.useLogger(app.get(Logger)); // pino becomes the Nest logger
   const config = app.get(ConfigService);
 
+  const redisAdapter = new RedisIoAdapter(app);
+  await redisAdapter.connectToRedis();
+
+  app.useWebSocketAdapter(redisAdapter);
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new ZodValidationPipe());
   // Exception filters are registered as APP_FILTER providers in AppModule so they

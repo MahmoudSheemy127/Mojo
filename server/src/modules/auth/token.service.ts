@@ -18,6 +18,7 @@ export interface TokenPair {
  */
 @Injectable()
 export class TokenService {
+  
   constructor(
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
