@@ -138,7 +138,7 @@ export class UsersService {
    * then emit `presence.changed` AFTER the write commits (persist-then-broadcast,
    * NF-16). The RealtimeModule listener fans it out to the user's contacts.
    */
-  async setPresence(userId: string, status: 'online' | 'away' | 'offline'): Promise<{ presence: PresenceStatus }> {
+  async setPresence(userId: string, status: 'online' | 'away' | 'dnd'): Promise<{ presence: PresenceStatus }> {
     await this.prisma.user.update({
       where: { id: userId },
       data: { presence: status.toUpperCase() as Prisma.UserUpdateInput['presence'] },

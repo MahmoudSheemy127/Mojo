@@ -35,4 +35,18 @@ describe('authStore', () => {
     expect(s.isAuthenticated).toBe(false);
     expect(s.accessToken).toBeNull();
   });
+
+  it('patchUser merges partial profile changes', () => {
+    useAuthStore.getState().setUser(mockUser, 'tok');
+    useAuthStore.getState().patchUser({ presence: 'dnd', avatarUrl: 'x.png' });
+    const s = useAuthStore.getState();
+    expect(s.currentUser?.presence).toBe('dnd');
+    expect(s.currentUser?.avatarUrl).toBe('x.png');
+    expect(s.currentUser?.username).toBe('alice');
+  });
+
+  it('patchUser is a no-op when signed out', () => {
+    useAuthStore.getState().patchUser({ presence: 'dnd' });
+    expect(useAuthStore.getState().currentUser).toBeNull();
+  });
 });

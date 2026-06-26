@@ -1,0 +1,93 @@
+openapi: 3.1.0
+info:
+  title: Chat API — Bundled
+  version: 1.0.0
+  description: >
+    Aggregator that merges every per-domain spec into one document so the
+    frontend's typed client (`src/types/api.generated.ts`) can be generated from
+    a single root. Each path item is referenced from its domain file; the domain
+    files in turn reference `_common.yaml` for shared schemas. openapi-typescript
+    dereferences these cross-file `$ref`s at generation time.
+
+    To add a stage's domain, reference its path items below — nothing else needs
+    to change. Mirrors docs/contract/README.md "Bundling into a single openapi.yaml".
+
+servers:
+  - url: '{baseUrl}'
+    variables:
+      baseUrl: { default: 'http://localhost:4000/api' }
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ── auth ──────────────────────────────────────────────────────────
+  /auth/signup:
+    $ref: './auth.openapi.yaml#/paths/~1auth~1signup'
+  /auth/login:
+    $ref: './auth.openapi.yaml#/paths/~1auth~1login'
+  /auth/refresh:
+    $ref: './auth.openapi.yaml#/paths/~1auth~1refresh'
+  /auth/logout:
+    $ref: './auth.openapi.yaml#/paths/~1auth~1logout'
+  /auth/google:
+    $ref: './auth.openapi.yaml#/paths/~1auth~1google'
+  /auth/google/callback:
+    $ref: './auth.openapi.yaml#/paths/~1auth~1google~1callback'
+  /auth/password-reset/request:
+    $ref: './auth.openapi.yaml#/paths/~1auth~1password-reset~1request'
+  /auth/password-reset/confirm:
+    $ref: './auth.openapi.yaml#/paths/~1auth~1password-reset~1confirm'
+
+  # ── users ─────────────────────────────────────────────────────────
+  /users/me:
+    $ref: './users.openapi.yaml#/paths/~1users~1me'
+  /users/me/avatar:
+    $ref: './users.openapi.yaml#/paths/~1users~1me~1avatar'
+  /users/me/presence:
+    $ref: './users.openapi.yaml#/paths/~1users~1me~1presence'
+  /users/search:
+    $ref: './users.openapi.yaml#/paths/~1users~1search'
+  /users/{userId}:
+    $ref: './users.openapi.yaml#/paths/~1users~1{userId}'
+
+  # ── contacts (FR-06–09) ───────────────────────────────────────────
+  /contacts:
+    $ref: './contacts.openapi.yaml#/paths/~1contacts'
+  /contacts/requests:
+    $ref: './contacts.openapi.yaml#/paths/~1contacts~1requests'
+  /contacts/requests/{requestId}/accept:
+    $ref: './contacts.openapi.yaml#/paths/~1contacts~1requests~1{requestId}~1accept'
+  /contacts/requests/{requestId}/decline:
+    $ref: './contacts.openapi.yaml#/paths/~1contacts~1requests~1{requestId}~1decline'
+  /contacts/{userId}:
+    $ref: './contacts.openapi.yaml#/paths/~1contacts~1{userId}'
+  /contacts/blocked:
+    $ref: './contacts.openapi.yaml#/paths/~1contacts~1blocked'
+  /contacts/blocks:
+    $ref: './contacts.openapi.yaml#/paths/~1contacts~1blocks'
+  /contacts/blocks/{userId}:
+    $ref: './contacts.openapi.yaml#/paths/~1contacts~1blocks~1{userId}'
+
+  # ── conversations (FR-12) ─────────────────────────────────────────
+  /conversations:
+    $ref: './conversations.openapi.yaml#/paths/~1conversations'
+  /conversations/dm:
+    $ref: './conversations.openapi.yaml#/paths/~1conversations~1dm'
+  /conversations/{conversationId}:
+    $ref: './conversations.openapi.yaml#/paths/~1conversations~1{conversationId}'
+  /conversations/{conversationId}/read:
+    $ref: './conversations.openapi.yaml#/paths/~1conversations~1{conversationId}~1read'
+
+  # ── messages (FR-13, FR-16, FR-17) ───────────────────────────────
+  /conversations/{conversationId}/messages:
+    $ref: './messages.openapi.yaml#/paths/~1conversations~1{conversationId}~1messages'
+  /messages/{messageId}:
+    $ref: './messages.openapi.yaml#/paths/~1messages~1{messageId}'
+  /attachments:
+    $ref: './messages.openapi.yaml#/paths/~1attachments'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: './_common.yaml#/components/securitySchemes/bearerAuth'

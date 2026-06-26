@@ -2,6 +2,7 @@
 import { Test } from '@nestjs/testing';
 import { ContactsService } from './contacts.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const userRow = (over: Record<string, unknown> = {}) => ({
   id: 'u2',
@@ -48,6 +49,7 @@ describe('ContactsService', () => {
     };
     $transaction: jest.Mock;
   };
+  let notifications: { create: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -73,8 +75,14 @@ describe('ContactsService', () => {
       $transaction: jest.fn(async (cb: (tx: unknown) => unknown) => cb(prisma)),
     };
 
+    notifications = { create: jest.fn().mockResolvedValue(undefined) };
+
     const moduleRef = await Test.createTestingModule({
-      providers: [ContactsService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        ContactsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: NotificationsService, useValue: notifications },
+      ],
     }).compile();
 
     service = moduleRef.get(ContactsService);
@@ -184,6 +192,11 @@ describe('ContactsService', () => {
       expect(prisma.relation.create).toHaveBeenCalledWith({
         data: { ownerId: 'u1', relatedId: 'u2', type: 'FRIEND' },
       });
+      expect(notifications.create).toHaveBeenCalledWith({
+        recipientId: 'u2', // the original requester (reverse.sourceUserId)
+        type: 'FRIEND_REQUEST_ACCEPTED',
+        actorId: 'u1',
+      });
       expect(res.id).toBe('reverse');
     });
 
@@ -218,6 +231,14 @@ describe('ContactsService', () => {
         data: { sourceUserId: 'u1', targetUserId: 'u2', type: 'FRIEND_REQUEST' },
         include: expect.any(Object),
       });
+      expect(notifications.create).toHaveBeenCalledWith({
+        recipientId: 'u2',
+        type: 'FRIEND_REQUEST',
+        actorId: 'u1',
+        requestId: 'new',
+      });
+      // actor is resolved from actorId server-side; it must NOT be duplicated into payload.
+      expect(notifications.create.mock.calls[0][0]).not.toHaveProperty('payload.actor');
       expect(res).toMatchObject({ id: 'new', from: { id: 'u1' }, to: { id: 'u2' } });
     });
   });
@@ -251,6 +272,11 @@ describe('ContactsService', () => {
       });
       expect(prisma.relation.create).toHaveBeenCalledWith({
         data: { ownerId: 'u2', relatedId: 'u1', type: 'FRIEND' },
+      });
+      expect(notifications.create).toHaveBeenCalledWith({
+        recipientId: 'u2', // the original requester (request.sourceUserId)
+        type: 'FRIEND_REQUEST_ACCEPTED',
+        actorId: 'u1', // the acceptor
       });
       expect(res.friend).toMatchObject({ id: 'u2', username: 'bob' });
     });

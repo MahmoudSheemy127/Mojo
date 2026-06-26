@@ -28,6 +28,9 @@ interface AuthState {
   isAuthenticated: boolean;
   setUser: (user: SelfUser, token: string) => void;
   setToken: (token: string) => void;
+  /** Merge partial profile changes (presence, avatar, name, bio) into the
+   *  current user so the persisted session stays in sync. No-op if signed out. */
+  patchUser: (partial: Partial<SelfUser>) => void;
   clear: () => void;
 }
 
@@ -40,6 +43,12 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user, token) =>
         set({ currentUser: user, accessToken: token, isAuthenticated: true }),
       setToken: (token) => set({ accessToken: token }),
+      patchUser: (partial) =>
+        set((state) =>
+          state.currentUser
+            ? { currentUser: { ...state.currentUser, ...partial } }
+            : {},
+        ),
       clear: () =>
         set({ currentUser: null, accessToken: null, isAuthenticated: false }),
     }),

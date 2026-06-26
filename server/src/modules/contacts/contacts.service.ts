@@ -6,10 +6,11 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { Prisma, RelationType, RequestStatus, RequestType } from '@prisma/client';
+import { NotificationType, Prisma, RelationType, RequestStatus, RequestType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { decodeCursor, encodeCursor } from '../../common/utils/cursor';
 import { PresenceStatus } from '../../events/app-events';
+import { NotificationsService } from '@modules/notifications/notifications.service';
 
 /** Contract shapes (docs/contract/_common.yaml). */
 export interface PublicUser {
@@ -59,7 +60,10 @@ type UserPublicRow = Prisma.UserGetPayload<{ select: typeof userPublicSelect }>;
  */
 @Injectable()
 export class ContactsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService,
+          private readonly notificationService: NotificationsService
+
+  ) {}
 
   /** GET /contacts — the caller's accepted friends, keyset-paginated (FR-06). */
   async listFriends(
@@ -164,6 +168,13 @@ export class ContactsService {
           data: { ownerId: callerId, relatedId: targetUserId, type: RelationType.FRIEND },
         });
       });
+      // Notify the original requester that the caller accepted (informational; actor profile
+      // resolved from actorId, so no extra FE fetch).
+      await this.notificationService.create({
+        recipientId: reverse.sourceUserId,
+        type: NotificationType.FRIEND_REQUEST_ACCEPTED,
+        actorId: callerId,
+      });
       // ContactRequest carries no status field; the reverse request's identity/users
       // are what the FE needs to reconcile the now-accepted friendship.
       return this.toContactRequest(reverse);
@@ -188,6 +199,17 @@ export class ContactsService {
         targetUser: { select: userPublicSelect },
       },
     });
+
+    // Side effect: notify the target. The actor (caller) profile is resolved server-side
+    // from actorId by the serializer, so the FE renders it without an extra fetch; payload
+    // only carries the requestId the FE needs to accept/decline.
+    await this.notificationService.create({
+      recipientId: targetUserId,
+      type: NotificationType.FRIEND_REQUEST,
+      actorId: callerId,
+      requestId: created.id,
+    });
+
     return this.toContactRequest(created);
   }
 
@@ -234,6 +256,14 @@ export class ContactsService {
           },
         });
       }
+    });
+
+    // Notify the original requester that the caller accepted (informational; actor profile
+    // resolved from actorId, so no extra FE fetch).
+    await this.notificationService.create({
+      recipientId: request.sourceUserId,
+      type: NotificationType.FRIEND_REQUEST_ACCEPTED,
+      actorId: callerId,
     });
 
     return { friend: this.toPublicUser(request.sourceUser) };
@@ -371,6 +401,15 @@ export class ContactsService {
    */
   async canInteract(a: string, b: string): Promise<boolean> {
     return !(await this.isBlockedEitherWay(a, b));
+  }
+
+  /**
+   * Whether two users are contacts (a single symmetric FRIEND edge exists, in either
+   * stored ordering). Reused by GroupsService to enforce "members must be the caller's
+   * contacts" on group creation / member-add (groups.md).
+   */
+  async areFriends(a: string, b: string): Promise<boolean> {
+    return (await this.findFriendship(a, b)) !== null;
   }
 
   // ── helpers ──────────────────────────────────────────────────────

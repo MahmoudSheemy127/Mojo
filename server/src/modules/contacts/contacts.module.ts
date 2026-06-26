@@ -2,6 +2,7 @@
 import { Module } from '@nestjs/common';
 import { ContactsController } from './contacts.controller';
 import { ContactsService } from './contacts.service';
+import { NotificationsService } from '@modules/notifications/notifications.service';
 
 /**
  * ContactsModule → Prisma (global). Exports ContactsService so other modules
@@ -10,7 +11,7 @@ import { ContactsService } from './contacts.service';
  */
 @Module({
   controllers: [ContactsController],
-  providers: [ContactsService],
+  providers: [ContactsService, NotificationsService],
   exports: [ContactsService],
 })
 export class ContactsModule {}

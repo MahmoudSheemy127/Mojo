@@ -5,5 +5,6 @@ export { SignupForm } from './components/SignupForm';
 export { GoogleOAuthButton } from './components/GoogleOAuthButton';
 export { useLogin } from './hooks/useLogin';
 export { useSignup } from './hooks/useSignup';
+export { useLogout } from './hooks/useLogout';
 export { loginSchema, signupSchema } from './schemas';
 export type { LoginFormValues, SignupFormValues } from './schemas';

@@ -14,6 +14,10 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
+import { ConversationsModule } from './modules/conversations/conversations.module';
+import { MessagesModule } from './modules/messages/messages.module';
+import { GroupsModule } from './modules/groups/groups.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { HealthModule } from './health/health.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -88,6 +92,10 @@ import { RedisModule } from '@redis/redis.module';
     AuthModule,
     UsersModule,
     ContactsModule,
+    ConversationsModule,
+    MessagesModule,
+    GroupsModule,
+    NotificationsModule,
     HealthModule,
     RealtimeModule,
     PresenceModule,
@@ -95,7 +103,12 @@ import { RedisModule } from '@redis/redis.module';
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard }, // auth by default; @Public() opts out
-    { provide: APP_GUARD, useClass: ThrottlerGuard }, // rate limit by default
+    // Bind the global ThrottlerGuard via `useExisting` (not `useClass`) so e2e/contract
+    // tests can neutralize rate limiting with `overrideGuard(ThrottlerGuard)` — an override
+    // cannot reach a guard bound with `useClass` on APP_GUARD. Production behavior is
+    // unchanged: a single ThrottlerGuard still runs on every route (NF-11).
+    ThrottlerGuard,
+    { provide: APP_GUARD, useExisting: ThrottlerGuard }, // rate limit by default
     // APP_FILTER-bound filters run in reverse registration order, so the specific
     // PrismaExceptionFilter (declared last) is tried before the catch-all.
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

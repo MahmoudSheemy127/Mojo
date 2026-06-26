@@ -1,6 +1,7 @@
 // src/features/chat/components/MessageBubble.tsx
 import type { Message } from '@/types/entities';
 import { Avatar } from '@/components/ui/Avatar';
+import { Button } from '@/components/ui/Button';
 import { DropdownMenu } from '@/components/ui/DropdownMenu';
 import { IconButton } from '@/components/ui/IconButton';
 import { MessageTimestamp } from '@/components/shared/MessageTimestamp';
@@ -12,6 +13,7 @@ interface MessageBubbleProps {
   /** When false, the avatar/name header is collapsed (consecutive messages). */
   showHeader?: boolean | undefined;
   onDelete?: (() => void) | undefined;
+  onRetry?: (() => void) | undefined;
 }
 
 /** A single message row: avatar, text, timestamp, status, hover menu. */
@@ -19,6 +21,7 @@ export function MessageBubble({
   message,
   showHeader = true,
   onDelete,
+  onRetry,
 }: MessageBubbleProps) {
   if (message.deleted) {
     return (
@@ -28,11 +31,14 @@ export function MessageBubble({
     );
   }
 
+  const isFailed = message.status === 'failed';
+
   return (
     <div
       className={cn(
         'group flex gap-3 px-4 py-0.5 hover:bg-bg-hover/40',
         showHeader && 'mt-2',
+        isFailed && 'opacity-70',
       )}
     >
       <div className="w-10 shrink-0">
@@ -51,7 +57,9 @@ export function MessageBubble({
             <span className="text-sm font-semibold text-text-normal">
               {message.authorName}
             </span>
-            <MessageTimestamp relative={message.sentAt} iso={message.sentAtIso} />
+            {!isFailed && (
+              <MessageTimestamp relative={message.sentAt} iso={message.sentAtIso} />
+            )}
           </div>
         )}
         <div className="flex items-center gap-2">
@@ -62,9 +70,23 @@ export function MessageBubble({
             <MessageStatusIcon status={message.status} />
           )}
         </div>
+        {isFailed && (
+          <div className="mt-1 flex items-center gap-2">
+            {onRetry && (
+              <Button size="sm" variant="ghost" onClick={onRetry}>
+                Retry
+              </Button>
+            )}
+            {onDelete && (
+              <Button size="sm" variant="ghost" onClick={onDelete}>
+                Delete
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
-      {message.own && onDelete && (
+      {message.own && !isFailed && onDelete && (
         <DropdownMenu
           trigger={({ toggle }) => (
             <IconButton

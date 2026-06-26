@@ -8,7 +8,7 @@ import { z } from 'zod';
  * restricted to the explicit choices.
  */
 export const SetPresenceSchema = z.object({
-  status: z.enum(['online', 'away', 'offline']),
+  status: z.enum(['online', 'away', 'dnd']),
 });
 
 export class SetPresenceDto extends createZodDto(SetPresenceSchema) {}

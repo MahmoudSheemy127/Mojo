@@ -9,6 +9,7 @@ import {
   InviteMembersModal,
   GroupSettingsModal,
 } from '@/features/groups';
+import { useSocketStore } from '@/store/socketStore';
 import { OverlayContext, type ModalType } from './overlayContext';
 
 /**
@@ -18,6 +19,7 @@ import { OverlayContext, type ModalType } from './overlayContext';
  */
 export default function AppLayout() {
   const [activeModal, setActiveModal] = useState<ModalType | null>(null);
+  const socketStatus = useSocketStore((s) => s.status);
 
   const overlay = useMemo(
     () => ({
@@ -37,8 +39,7 @@ export default function AppLayout() {
         <div className="flex min-h-0 flex-1">
           <ChatList />
           <main className="flex min-w-0 flex-1 flex-col">
-            {/* Toggle the status prop to preview the reconnecting banner. */}
-            <ConnectionStatusBanner status="connected" />
+            <ConnectionStatusBanner status={socketStatus} />
             <Outlet />
           </main>
         </div>

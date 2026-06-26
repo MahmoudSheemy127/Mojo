@@ -17,7 +17,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
-    "contract:types": "openapi-typescript docs/contract/auth.openapi.yaml -o src/types/api.generated.ts",
+    "contract:types": "openapi-typescript docs/contract/openapi.yaml -o src/types/api.generated.ts",
     "gate:scaffold": "npm ci && npm run contract:types && npm run build && npm run typecheck && npm run lint && node scripts/check-structure.mjs",
     "gate:frontend": "npm run contract:types && npm run typecheck && npm run lint && npm run test:cov",
     "gate:e2e": "npm run test:e2e",

@@ -31,7 +31,10 @@ describe('Users contract (/api/users)', () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
-      .overrideGuard(ThrottlerGuard)
+      // overrideProvider (not overrideGuard) — overrideGuard cannot neutralize a guard
+      // bound globally via APP_GUARD; the app binds ThrottlerGuard with useExisting so this
+      // provider override takes effect and rate limiting is bypassed for functional cases.
+      .overrideProvider(ThrottlerGuard)
       .useValue({ canActivate: () => true })
       .compile();
 

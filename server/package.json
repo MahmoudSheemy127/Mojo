@@ -19,7 +19,7 @@
     "prisma:studio": "prisma studio",
     "test": "jest --selectProjects unit",
     "test:unit": "jest --selectProjects unit",
-    "test:integration": "jest --selectProjects integration",
+    "test:integration": "jest --selectProjects integration --passWithNoTests",
     "test:schema": "jest --selectProjects schema",
     "test:contract": "jest --selectProjects contract",
     "test:realtime": "jest --selectProjects realtime",

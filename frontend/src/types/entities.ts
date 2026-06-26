@@ -34,7 +34,7 @@ export interface ConversationSummary {
   typing?: boolean | undefined;
 }
 
-export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read';
+export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
 
 export interface Message {
   id: string;
@@ -51,6 +51,8 @@ export interface Message {
   deleted?: boolean | undefined;
   /** Marks the current user's own message (right-aligned, status shown). */
   own?: boolean | undefined;
+  /** Client-generated nonce used to reconcile optimistic bubbles. */
+  clientNonce?: string | undefined;
 }
 
 export type Role = 'admin' | 'member';

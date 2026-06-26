@@ -79,15 +79,15 @@
 ## Stage 4 — Contacts  ·  FR-06–09
 
 - [ ] **(XC)** `canInteract(a, b)` block guard — reused by Stage 5 send & Stage 6 invites
-- [ ] List friends (with presence)
+- [x] List friends (with presence)
 - [ ] Send friend request → notification (Stage 7); auto-accept on mutual request
-- [ ] List friend requests (incoming / outgoing)
+- [x] List friend requests (incoming / outgoing)
 - [ ] Accept friend request → notification + `conversation:new` (Stage 7 / Stage 5)
-- [ ] Decline friend request
-- [ ] Remove contact (symmetric)
-- [ ] Block user (drops friendship/requests, NF-13)
-- [ ] Unblock user
-- [ ] List blocked users (→ Settings)
+- [x] Decline friend request
+- [x] Remove contact (symmetric)
+- [x] Block user (drops friendship/requests, NF-13)
+- [x] Unblock user
+- [x] List blocked users (→ Settings)
 
 > **Deliverable:** Full contact graph; block guard centralized and enforced everywhere it
 > must be (search, DM, invite).
@@ -97,29 +97,29 @@
 ## Stage 5 — Conversations, Chat & Realtime  ·  FR-12–17
 
 **Conversations:**
-- [ ] List conversations (sorted by recent):
-  - [ ] 1-on-1 DMs
+- [x] List conversations (sorted by recent):
+  - [x] 1-on-1 DMs
   - [ ] Group conversations → Stage 6
-- [ ] Open a chat / open-or-create DM (idempotent, `dmKey`)
+- [x] Open a chat / open-or-create DM (idempotent, `dmKey`)
 - [ ] Set conversation read (persist marker) + emit `message:status` read
-- [ ] Fetch message history (keyset on `(conversationId, id)`, backward pagination)
+- [x] Fetch message history (keyset on `(conversationId, id)`, backward pagination)
 
 **Realtime foundation:**
-- [ ] Socket client init (JWT handshake auth, room join on connect)
-- [ ] Redis Socket.io adapter (cross-instance fan-out, NF-05)
-- [ ] **(XC)** Persist-**before**-broadcast ordering (NF-16) — emit only after DB commit
-- [ ] Reconnect + missed-message replay by ULID cursor (reliability NFR)
+- [x] Socket client init (JWT handshake auth, room join on connect)
+- [x] Redis Socket.io adapter (cross-instance fan-out, NF-05)
+- [x] **(XC)** Persist-**before**-broadcast ordering (NF-16) — emit only after DB commit
+- [x] Reconnect + missed-message replay by ULID cursor (reliability NFR)
 - [ ] Connection status banner (FE)
 
 **Messaging:**
-- [ ] Send message:
-  - [ ] Persistence (assign ULID, update conversation last-message/activity)
-  - [ ] Socket `message:new` to other participants
+- [x] Send message:
+  - [x] Persistence (assign ULID, update conversation last-message/activity)
+  - [x] Socket `message:new` to other participants
   - [ ] Mentions → notification (Stage 7)
-- [ ] Upload attachments with message (P3; two-step upload-then-send)
+- [x] Upload attachments with message (P3; two-step upload-then-send)
 - [ ] Typing status (socket relay, throttled)
 - [ ] Message read (socket + persistence — both paths)
-- [ ] Message deleted (soft-delete persistence + `message:deleted` socket)
+- [x] Message deleted (soft-delete persistence + `message:deleted` socket)
 - [ ] FE optimistic send (`clientNonce`) + rollback on failure
 
 > **Deliverable:** Login → open DM → send → recipient receives live → reload reads history
@@ -132,16 +132,16 @@
 
 - [ ] **Decision:** last-admin rule (block leave vs auto-promote) — settle before building
 - [ ] **Decision:** join model (direct add vs admin-approved) — settle before building
-- [ ] Create group (creator = admin)
-- [ ] Get group detail + list members
-- [ ] Update group profile (name/description/avatar) → notification (Stage 7)
+- [x] Create group (creator = admin)
+- [x] Get group detail + list members
+- [x] Update group profile (name/description/avatar) → notification (Stage 7)
 - [ ] Delete group
-- [ ] Add / invite members (block-guarded) → notification (Stage 7)
+- [x] Add / invite members (block-guarded) → notification (Stage 7)
 - [ ] Change member role (promote / demote; last-admin guard) → notification (Stage 7)
-- [ ] Remove member → notification (Stage 7)
+- [x] Remove member → notification (Stage 7)
 - [ ] Leave group (self) — same endpoint as remove, branches on target
-- [ ] Generate invite link (token, expiry, max-uses)
-- [ ] Join via link (direct or pending per model)
+- [x] Generate invite link (token, expiry, max-uses)
+- [x] Join via link (direct or pending per model)
 - [ ] Group join-request approval by admin → notification (Stage 7)
 - [ ] Backfill: group conversations into Stage 5's conversation list
 
@@ -192,6 +192,7 @@
 | Notification side-effects | Stages 4–6 (deferred) | wired in Stage 7 |
 | Joint G4 per feature | each stage | converged in Stage 8 |
 | Two group decisions (last-admin, join model) | flagged since Phase 3 | settled in Stage 6 |
+
 
 ## Notes vs the original draft
 - Added the **contract derivation** + **schema/migration** + **observability** to Stage 1

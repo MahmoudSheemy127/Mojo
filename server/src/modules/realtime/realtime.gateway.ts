@@ -1,7 +1,8 @@
 import { WsJwtGuard } from "@common/guards/ws-jwt.guard";
 import { ClientToServerEvents, ServerToClientEvents } from "@common/types/socket-events";
+import { ConversationsService } from "@modules/conversations/conversations.service";
 import { PresenceService } from "@modules/presence/presence.service";
-import { UseGuards } from "@nestjs/common";
+import { Logger, UseGuards } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io";
@@ -12,9 +13,12 @@ import { Server, Socket } from "socket.io";
 export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
 
 
+    private readonly logger = new Logger(RealtimeGateway.name);
+
     constructor(
         private readonly presenceService: PresenceService,
         private readonly jwtService: JwtService,
+        private readonly conversations: ConversationsService,
     ) {
     }
 
@@ -40,6 +44,10 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     async handleConnection(socket: Socket<ClientToServerEvents, ServerToClientEvents>) {
         const id = socket.data.user.id;
         await socket.join(`user:${id}`);
+        // Join every conversation room the user belongs to so persist-then-broadcast emits
+        // (message:new / message:deleted / message:status) reach them (asyncapi.yaml).
+        const conversationIds = await this.conversations.listConversationIds(id);
+        await Promise.all(conversationIds.map(async (cid) => socket.join(`conversation:${cid}`)));
         await this.presenceService.increment(id);
     }
     
@@ -63,10 +71,17 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
         socket.to(`conversation:${data.conversationId}`).emit('typing:stop', { conversationId: data.conversationId, userId });
     }
 
+    // Persist-then-broadcast (NF-16): the durable read marker is written first, and
+    // ConversationsService emits `message.read` after commit — RealtimeListener turns that
+    // into the `message:status` broadcast. We never emit the receipt before the row is safe.
     @SubscribeMessage('message:read')
-    handleMessageRead(socket: Socket<ClientToServerEvents, ServerToClientEvents>, data: { conversationId: string; lastReadMessageId: string }) {
+    async handleMessageRead(socket: Socket<ClientToServerEvents, ServerToClientEvents>, data: { conversationId: string; lastReadMessageId: string }) {
         const userId = socket.data.user.id;
-        socket.to(`conversation:${data.conversationId}`).emit('message:status', { conversationId: data.conversationId, userId, messageId: data.lastReadMessageId, status: 'read' });
+        try {
+            await this.conversations.markRead(userId, data.conversationId, data.lastReadMessageId);
+        } catch (err) {
+            this.logger.warn(`message:read ignored for ${userId}/${data.conversationId}: ${String(err)}`);
+        }
     }
 
 

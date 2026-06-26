@@ -1,8 +1,10 @@
 
 
 // Socket Event types
-import { Conversation, Group, GroupRole, Member, Message, Notification } from "@prisma/client";
 import { PresenceStatus } from "@events/app-events";
+import { ConversationView, MessageView } from "./conversation-view";
+import { NotificationView } from "./notification-view";
+import { GroupMemberView, GroupView } from "./group-view";
 
 
 
@@ -21,7 +23,8 @@ export interface ClientToServerEvents {
 // Server to Client Events
 export interface ServerToClientEvents {
 
-    'message:new': (data: { conversationId: string; message: Message }) => void;
+    // asyncapi.yaml#MessageNew — payload carries the serialized contract Message.
+    'message:new': (data: { message: MessageView }) => void;
 
     'message:deleted': (data: { conversationId: string; messageId: string }) => void;
 
@@ -33,18 +36,19 @@ export interface ServerToClientEvents {
 
     'presence:changed': (data: { userId: string; status: PresenceStatus }) => void;
 
-    'notification:new': (data: { notification: Notification }) => void;
+    // asyncapi.yaml#NotificationNew — payload carries the serialized contract Notification.
+    'notification:new': (data: { notification: NotificationView }) => void;
 
-    'conversation:new': (data: { conversation: Conversation }) => void;
+    'conversation:new': (data: { conversation: ConversationView }) => void;
 
-    'group:updated': (data: { group: Group }) => void;
+    'group:updated': (data: { group: GroupView }) => void;
 
     'group:deleted': (data: { groupId: string }) => void;
 
-    'member:added': (data: { groupId: string; member: Member }) => void;
+    'member:added': (data: { groupId: string; member: GroupMemberView }) => void;
 
     'member:removed': (data: { groupId: string; userId: string }) => void;
 
-    'member:role_changed': (data: { groupId: string; userId: string; role: GroupRole }) => void;
+    'member:role_changed': (data: { groupId: string; userId: string; role: 'admin' | 'member' }) => void;
 
 }
