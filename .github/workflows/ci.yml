@@ -91,6 +91,9 @@ jobs:
 
             - name: Generate Prisma client
               run: npx prisma generate
+              env:
+                  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mojo_test
+                  REDIS_URL: redis://localhost:6379
 
             # ── 1. Type checks ────────────────────────────────────────
             - name: Type checks
