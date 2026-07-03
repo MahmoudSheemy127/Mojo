@@ -185,5 +185,5 @@ jobs:
                     --task-definition "${{ steps.register.outputs.arn }}" \
                     --launch-type FARGATE \
                     --count 1 \
-                    --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.ECS_SUBNETS }}],securityGroups=[${{ secrets.ECS_SECURITY_GROUPS }}],assignedPublicIp=ENABLED}" \
+                    --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.ECS_SUBNETS }}],securityGroups=[${{ secrets.ECS_SECURITY_GROUPS }}],assignPublicIp=ENABLED}" \
                     --region "$AWS_REGION"
