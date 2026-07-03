@@ -15,7 +15,8 @@ export type ModalType =
 
 export interface OverlayContextValue {
   activeModal: ModalType | null;
-  openModal: (type: ModalType) => void;
+  /** Pass optional groupId when opening group-scoped modals. */
+  openModal: (type: ModalType, groupId?: string) => void;
   closeModal: () => void;
 }
 

@@ -30,9 +30,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">87.5% </span>
+                <span class="strong">83.33% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>14/16</span>
+                <span class='fraction'>15/18</span>
             </div>
         
             
@@ -252,39 +252,39 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">15x</span>
-<span class="cline-any cline-yes">15x</span>
-<span class="cline-any cline-yes">15x</span>
-<span class="cline-any cline-yes">15x</span>
-<span class="cline-any cline-yes">15x</span>
-<span class="cline-any cline-yes">15x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">15x</span>
-<span class="cline-any cline-yes">15x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">15x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">15x</span>
+<span class="cline-any cline-yes">22x</span>
 <span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">15x</span>
+<span class="cline-any cline-yes">22x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">15x</span>
+<span class="cline-any cline-yes">22x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -405,6 +405,7 @@ import { IconButton } from '@/components/ui/IconButton';
 import { Popover } from '@/components/ui/Popover';
 import { PresenceDot } from '@/components/shared/PresenceDot';
 import { NotificationList } from '@/features/notifications';
+import { useNotificationCount } from '@/features/notifications/hooks/useNotifications';
 import {
   PresenceSelector,
   toUiPresence,
@@ -418,8 +419,6 @@ import type { Presence } from '@/types/entities';
 &nbsp;
 type OpenPopover = 'notifications' | 'profile' | null;
 &nbsp;
-const UNREAD_NOTIFICATIONS = 2;
-&nbsp;
 /**
  * Persistent top bar: app name, Find friends entry, notification bell, and the
  * profile/presence/settings popover. Only one popover open at a time.
@@ -431,6 +430,7 @@ export function HeaderBar() {
   const { data: me } = useMe();
   const updatePresence = useUpdatePresence();
   const logout = useLogout();
+  const unreadCount = useNotificationCount();
 &nbsp;
   const presence: Presence = me ? toUiPresence(me.presence) : 'offline';
   const displayName = me?.displayName ?? 'You';
@@ -479,13 +479,13 @@ export function HeaderBar() {
             &gt;
               &lt;span aria-hidden&gt;🔔&lt;/span&gt;
               &lt;span className="absolute -right-1 -top-1"&gt;
-                &lt;Badge count={UNREAD_NOTIFICATIONS} /&gt;
+                &lt;Badge count={unreadCount} /&gt;
               &lt;/span&gt;
             &lt;/IconButton&gt;
           }
           className="p-0"
         &gt;
-          &lt;NotificationList /&gt;
+          {open === 'notifications' &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >&lt;NotificationList /&gt;}</span>
         &lt;/Popover&gt;
 &nbsp;
         &lt;Popover
@@ -568,7 +568,7 @@ export function HeaderBar() {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-06-26T22:17:24.881Z
+                at 2026-06-28T16:22:40.740Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

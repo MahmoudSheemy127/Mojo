@@ -87,6 +87,38 @@ paths:
   /attachments:
     $ref: './messages.openapi.yaml#/paths/~1attachments'
 
+  # ── groups (FR-18–23) ─────────────────────────────────────────────
+  /groups:
+    $ref: './groups.openapi.yaml#/paths/~1groups'
+  /groups/join:
+    $ref: './groups.openapi.yaml#/paths/~1groups~1join'
+  /groups/{groupId}:
+    $ref: './groups.openapi.yaml#/paths/~1groups~1{groupId}'
+  /groups/{groupId}/members:
+    $ref: './groups.openapi.yaml#/paths/~1groups~1{groupId}~1members'
+  /groups/{groupId}/members/{userId}:
+    $ref: './groups.openapi.yaml#/paths/~1groups~1{groupId}~1members~1{userId}'
+  /groups/{groupId}/avatar:
+    $ref: './groups.openapi.yaml#/paths/~1groups~1{groupId}~1avatar'
+  /groups/{groupId}/invite-link:
+    $ref: './groups.openapi.yaml#/paths/~1groups~1{groupId}~1invite-link'
+  /groups/{groupId}/join-requests/{requestId}/accept:
+    $ref: './groups.openapi.yaml#/paths/~1groups~1{groupId}~1join-requests~1{requestId}~1accept'
+  /groups/{groupId}/join-requests/{requestId}/decline:
+    $ref: './groups.openapi.yaml#/paths/~1groups~1{groupId}~1join-requests~1{requestId}~1decline'
+  /groups/{groupId}/invites/{inviteId}/accept:
+    $ref: './groups.openapi.yaml#/paths/~1groups~1{groupId}~1invites~1{inviteId}~1accept'
+  /groups/{groupId}/invites/{inviteId}/decline:
+    $ref: './groups.openapi.yaml#/paths/~1groups~1{groupId}~1invites~1{inviteId}~1decline'
+
+  # ── notifications (FR-30) ─────────────────────────────────────────
+  /notifications:
+    $ref: './notifications.openapi.yaml#/paths/~1notifications'
+  /notifications/count:
+    $ref: './notifications.openapi.yaml#/paths/~1notifications~1count'
+  /notifications/seen:
+    $ref: './notifications.openapi.yaml#/paths/~1notifications~1seen'
+
 components:
   securitySchemes:
     bearerAuth:

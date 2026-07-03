@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>7/7</span>
+                <span class='fraction'>0/7</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>7/7</span>
+                <span class='fraction'>0/7</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -243,7 +243,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -251,7 +251,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -259,7 +259,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -277,7 +277,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -307,7 +307,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -354,14 +354,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -409,7 +409,7 @@ import type {
   User,
 } from '@/types/entities';
 &nbsp;
-export const currentUser: User = {
+export const currentUser: User = <span class="cstat-no" title="statement not covered" >{</span>
   id: 'me',
   username: 'mojo_dev',
   displayName: 'Mojo Dev',
@@ -417,7 +417,7 @@ export const currentUser: User = {
   bio: 'Building Mojo.',
 };
 &nbsp;
-export const friends: User[] = [
+export const friends: User[] = <span class="cstat-no" title="statement not covered" >[</span>
   { id: 'u1', username: 'aria', displayName: 'Aria Chen', presence: 'online' },
   { id: 'u2', username: 'ben', displayName: 'Ben Okafor', presence: 'idle' },
   { id: 'u3', username: 'cleo', displayName: 'Cleo Marsh', presence: 'dnd' },
@@ -425,7 +425,7 @@ export const friends: User[] = [
   { id: 'u5', username: 'esme', displayName: 'Esme Ford', presence: 'online' },
 ];
 &nbsp;
-export const groups: ConversationSummary[] = [
+export const groups: ConversationSummary[] = <span class="cstat-no" title="statement not covered" >[</span>
   {
     id: 'g1',
     type: 'group',
@@ -443,7 +443,7 @@ export const groups: ConversationSummary[] = [
   },
 ];
 &nbsp;
-export const conversations: ConversationSummary[] = [
+export const conversations: ConversationSummary[] = <span class="cstat-no" title="statement not covered" >[</span>
   {
     id: 'c-aria',
     type: 'dm',
@@ -473,7 +473,7 @@ export const conversations: ConversationSummary[] = [
   },
 ];
 &nbsp;
-export const messages: Message[] = [
+export const messages: Message[] = <span class="cstat-no" title="statement not covered" >[</span>
   {
     id: 'm1',
     authorId: 'u1',
@@ -520,14 +520,14 @@ export const messages: Message[] = [
   },
 ];
 &nbsp;
-export const groupMembers: GroupMember[] = [
+export const groupMembers: GroupMember[] = <span class="cstat-no" title="statement not covered" >[</span>
   { id: 'gm0', user: currentUser, role: 'admin' },
   { id: 'gm1', user: friends[0]!, role: 'admin' },
   { id: 'gm2', user: friends[1]!, role: 'member' },
   { id: 'gm3', user: friends[2]!, role: 'member' },
 ];
 &nbsp;
-export const notifications: Notification[] = [
+export const notifications: Notification[] = <span class="cstat-no" title="statement not covered" >[</span>
   {
     id: 'n1',
     kind: 'friend-request',
@@ -568,7 +568,7 @@ export const notifications: Notification[] = [
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-06-26T22:17:24.109Z
+                at 2026-06-28T16:22:39.767Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

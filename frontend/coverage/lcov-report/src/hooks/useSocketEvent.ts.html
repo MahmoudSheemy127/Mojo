@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>6/6</span>
+                <span class='fraction'>10/10</span>
             </div>
         
             
@@ -39,14 +39,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>3/3</span>
+                <span class='fraction'>4/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>6/6</span>
+                <span class='fraction'>10/10</span>
             </div>
         
             
@@ -87,7 +87,15 @@
 <a name='L22'></a><a href='#L22'>22</a>
 <a name='L23'></a><a href='#L23'>23</a>
 <a name='L24'></a><a href='#L24'>24</a>
-<a name='L25'></a><a href='#L25'>25</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -98,23 +106,32 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">94x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">40x</span>
-<span class="cline-any cline-yes">40x</span>
-<span class="cline-any cline-yes">40x</span>
-<span class="cline-any cline-yes">40x</span>
-<span class="cline-any cline-yes">40x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">368x</span>
+<span class="cline-any cline-yes">368x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">368x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">167x</span>
+<span class="cline-any cline-yes">26x</span>
+<span class="cline-any cline-yes">167x</span>
+<span class="cline-any cline-yes">167x</span>
+<span class="cline-any cline-yes">167x</span>
+<span class="cline-any cline-yes">167x</span>
+<span class="cline-any cline-yes">167x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// src/hooks/useSocketEvent.ts
 // Typed, cleanup-safe socket event subscription.
-import { useEffect } from 'react';
-import { socket } from '@/lib/socket';
+import { useEffect, useRef } from 'react';
+import { socket } from '@/hooks/useSocket';
+&nbsp;
 import type { ServerToClientEvents } from '@/types/socket';
 &nbsp;
 /** Subscribe to a typed server-to-client socket event; auto-cleans up on unmount. */
@@ -122,17 +139,24 @@ export function useSocketEvent&lt;K extends keyof ServerToClientEvents&gt;(
   event: K,
   handler: ServerToClientEvents[K],
 ) {
+  // Keep the latest handler in a ref so a single, stable listener always invokes
+  // the current closure. Without this, a handler that changes identity (e.g. one
+  // that closes over conversationId) would never be re-bound — the socket would
+  // keep calling the stale closure from a previous render.
+  const handlerRef = useRef(handler);
+  handlerRef.current = handler;
+&nbsp;
   useEffect(() =&gt; {
     // socket.io's FallbackToUntypedListener type doesn't distribute over a generic
     // K at the call-site, so we go through the untyped path deliberately.
+    const listener = (...args: unknown[]) =&gt;
+      (handlerRef.current as (...a: unknown[]) =&gt; void)(...args);
     const rawOn = (socket.on as (e: string, h: unknown) =&gt; void).bind(socket);
     const rawOff = (socket.off as (e: string, h: unknown) =&gt; void).bind(socket);
-    rawOn(event, handler);
+    rawOn(event, listener);
     return () =&gt; {
-      rawOff(event, handler);
+      rawOff(event, listener);
     };
-    // handler identity must be stable — callers should memoize with useCallback
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event]);
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -142,7 +166,7 @@ export function useSocketEvent&lt;K extends keyof ServerToClientEvents&gt;(
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-06-26T22:17:24.109Z
+                at 2026-06-28T16:22:39.767Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

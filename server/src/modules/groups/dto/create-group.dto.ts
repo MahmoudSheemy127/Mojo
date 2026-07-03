@@ -10,7 +10,7 @@ export const CreateGroupSchema = z.object({
   name: z.string().min(1).max(80),
   description: z.string().max(300).optional(),
   avatarId: z.string().uuid().optional(),
-  memberIds: z.array(z.string().uuid()).optional(),
+  memberIds: z.array(z.string().uuid()).optional(), 
 });
 
 export class CreateGroupDto extends createZodDto(CreateGroupSchema) {}

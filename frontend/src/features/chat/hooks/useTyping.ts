@@ -1,6 +1,6 @@
 // src/features/chat/hooks/useTyping.ts
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { socket } from '@/lib/socket';
+import { socket } from '@/hooks/useSocket';
 import { useSocketEvent } from '@/hooks/useSocketEvent';
 import { useAuthStore } from '@/store/authStore';
 
@@ -57,6 +57,13 @@ export function useTyping(
     },
     [],
   );
+
+  // Switching conversations reuses this hook instance (ChatWindow isn't keyed by
+  // id), so clear any typers carried over from the previous conversation —
+  // their typing:stop would otherwise be filtered out and never clear.
+  useEffect(() => {
+    setTypingUserIds(new Set());
+  }, [conversationId]);
 
   // socket: someone started typing
   const onTypingStart = useCallback(

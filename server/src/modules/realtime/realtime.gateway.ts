@@ -8,8 +8,8 @@ import { OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, SubscribeMessa
 import { Server, Socket } from "socket.io";
 
 
-@WebSocketGateway({ cors: { origin: process.env.WEB_ORIGIN, credentials: true } })
-@UseGuards(WsJwtGuard)
+@WebSocketGateway({ cors: { origin: 'http://localhost:5173', credentials: true } })
+// @UseGuards(WsJwtGuard)
 export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
 
 
@@ -34,6 +34,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
                 const token = socket.handshake.auth.token ?? socket.handshake.query['token'];
                 const payload = this.jwtService.verify(token as string, { secret: process.env.JWT_ACCESS_SECRET });
                 socket.data.user = { id: payload.sub };
+                console.log("Valid token");
                 next();
             } catch {
                 next(new Error('UNAUTHENTICATED'));
@@ -62,6 +63,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     @SubscribeMessage('typing:start')
     handleTypingStart(socket: Socket<ClientToServerEvents, ServerToClientEvents>, data: { conversationId: string }) {
         const userId = socket.data.user.id;
+        console.log("Received Typing server");
         socket.to(`conversation:${data.conversationId}`).emit('typing:start', { conversationId: data.conversationId, userId });
     }
 

@@ -1,12 +1,12 @@
 // src/features/groups/components/MemberRow.tsx
-import type { GroupMember } from '@/types/entities';
+import type { ApiGroupMember } from '@/types/api';
 import { Avatar } from '@/components/ui/Avatar';
 import { DropdownMenu } from '@/components/ui/DropdownMenu';
 import { IconButton } from '@/components/ui/IconButton';
 import { RoleBadge } from '@/components/shared/RoleBadge';
 
 interface MemberRowProps {
-  member: GroupMember;
+  member: ApiGroupMember;
   /** Whether the current viewer can manage this member. */
   manageable?: boolean | undefined;
   onPromote?: (() => void) | undefined;
@@ -28,7 +28,7 @@ export function MemberRow({
     <div className="group flex items-center gap-3 rounded-card px-2 py-2 hover:bg-bg-hover">
       <Avatar
         name={member.user.displayName}
-        src={member.user.avatarUrl}
+        src={member.user.avatarUrl ?? undefined}
         size="sm"
       />
       <span className="min-w-0 flex-1 truncate text-sm text-text-normal">

@@ -12,7 +12,7 @@ const mockSocket = vi.hoisted(() => ({
   connected: false,
 }));
 
-vi.mock('@/lib/socket', () => ({ socket: mockSocket }));
+vi.mock('@/hooks/useSocket', () => ({ socket: mockSocket }));
 vi.mock('@/features/chat/api', () => ({
   markConversationRead: vi.fn().mockResolvedValue(undefined),
   fetchMessages: vi.fn(),

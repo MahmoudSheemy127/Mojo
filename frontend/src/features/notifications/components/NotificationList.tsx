@@ -1,20 +1,16 @@
 // src/features/notifications/components/NotificationList.tsx
+import { useEffect } from 'react';
 import type { Notification } from '@/types/entities';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { notifications as placeholderNotifications } from '@/lib/placeholder';
+import {
+  useNotifications,
+  useMarkNotificationsSeen,
+} from '../hooks/useNotifications';
 import { FriendRequestItem } from './FriendRequestItem';
 import { GroupInviteItem } from './GroupInviteItem';
 import { JoinRequestItem } from './JoinRequestItem';
 import { GenericNotificationItem } from './GenericNotificationItem';
-
-type ListState = 'loading' | 'error' | 'ready';
-
-interface NotificationListProps {
-  /** Drives which visual state renders. Defaults to the populated list. */
-  state?: ListState | undefined;
-  items?: Notification[] | undefined;
-}
 
 function renderItem(n: Notification) {
   switch (n.kind) {
@@ -29,21 +25,37 @@ function renderItem(n: Notification) {
   }
 }
 
-/** Dropdown body: header + loading / empty / error / items. */
-export function NotificationList({
-  state = 'ready',
-  items = placeholderNotifications,
-}: NotificationListProps) {
+/**
+ * Notification dropdown body. Loads the feed, marks it seen on open (clears the
+ * bell badge), and renders loading / error / empty / item states. Actionable
+ * rows dispatch accept/decline through `useNotificationActions`.
+ */
+export function NotificationList() {
+  const { data: items = [], isLoading, isError, refetch } = useNotifications();
+  const markSeen = useMarkNotificationsSeen();
+
+  // Mark seen when the dropdown mounts (i.e. opens). `mutate` is referentially
+  // stable, so this runs once per open.
+  const markSeenMutate = markSeen.mutate;
+  useEffect(() => {
+    markSeenMutate(undefined);
+  }, [markSeenMutate]);
+
   return (
     <div className="w-80">
       <div className="flex items-center justify-between border-b border-bg-deepest px-3 py-2">
         <h2 className="text-sm font-semibold text-text-normal">Notifications</h2>
-        <Button size="sm" variant="ghost">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => markSeenMutate(undefined)}
+          disabled={items.length === 0}
+        >
           Mark all read
         </Button>
       </div>
 
-      {state === 'loading' && (
+      {isLoading && (
         <div className="flex flex-col gap-2 p-3">
           {[0, 1, 2].map((i) => (
             <div key={i} className="flex gap-3">
@@ -57,16 +69,17 @@ export function NotificationList({
         </div>
       )}
 
-      {state === 'error' && (
+      {!isLoading && isError && (
         <div className="flex flex-col items-center gap-2 p-6 text-center">
           <p className="text-sm text-text-muted">Couldn’t load notifications.</p>
-          <Button size="sm" variant="secondary">
+          <Button size="sm" variant="secondary" onClick={() => void refetch()}>
             Retry
           </Button>
         </div>
       )}
 
-      {state === 'ready' &&
+      {!isLoading &&
+        !isError &&
         (items.length === 0 ? (
           <p className="p-6 text-center text-sm text-text-muted">
             You’re all caught up.

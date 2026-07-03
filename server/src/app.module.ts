@@ -26,6 +26,23 @@ import { RealtimeModule } from '@modules/realtime/realtime.module';
 import { PresenceModule } from '@modules/presence/presence.module';
 import { RedisModule } from '@redis/redis.module';
 
+/**
+ * Use the pretty console transport only when explicitly in development AND
+ * pino-pretty is actually installed. It's a devDependency, so a production
+ * image built with `npm ci --omit=dev` won't have it — returning undefined
+ * there keeps logging as structured JSON instead of crashing pino with
+ * "unable to determine transport target for pino-pretty".
+ */
+function prettyTransport(): { target: string; options: object } | undefined {
+  if (process.env.NODE_ENV !== 'development') return undefined;
+  try {
+    require.resolve('pino-pretty');
+  } catch {
+    return undefined;
+  }
+  return { target: 'pino-pretty', options: { singleLine: true } };
+}
+
 @Module({
   imports: [
     // Sentry request-scope isolation + Nest instrumentation (init lives in instrument.ts).
@@ -45,11 +62,11 @@ import { RedisModule } from '@redis/redis.module';
           return id;
         },
 
-        // Pretty in dev, JSON in prod.
-        transport:
-          process.env.NODE_ENV === 'development'
-            ? { target: 'pino-pretty', options: { singleLine: true } }
-            : undefined,
+        // Pretty in dev, JSON in prod. pino-pretty is a devDependency, so guard
+        // on it actually being resolvable — a prod image (npm ci --omit=dev)
+        // must never crash with "unable to determine transport target" even if
+        // NODE_ENV=development leaks in via an env file.
+        transport: prettyTransport(),
 
         // NF-15: never log message content, passwords, tokens, or cookies.
         redact: {

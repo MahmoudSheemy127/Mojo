@@ -83,7 +83,7 @@ export function useMessages(
   // socket: new message → append to newest page
   const onMessageNew = useCallback(
     (payload: { message: ApiMessage }) => {
-      if (payload.message.conversationId !== conversationId) return;
+      if (payload.message.conversationId !== conversationId || payload.message.senderId === currentUserId) return;
       queryClient.setQueryData<MessagesData>(
         messagesKey(conversationId),
         (old) => {

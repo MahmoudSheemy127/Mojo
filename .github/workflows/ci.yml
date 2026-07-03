@@ -1,0 +1,186 @@
+name: CI
+
+on:
+    push:
+        branches: [main]
+
+# Cancel superseded runs on the same branch.
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    changes:
+        runs-on: ubuntu-latest
+        outputs:
+            backend: ${{ steps.filter.outputs.backend }}
+            frontend: ${{ steps.filter.outputs.frontend }}
+        steps:
+            - uses: actions/checkout@v4
+            - uses: dorny/paths-filter@v3
+              id: filter
+              with:
+                  filters: |
+                      backend:
+                          - 'server/**'
+                      frontend:
+                          - 'frontend/**'
+
+    deploy-backend:
+        name: Deploy Backend
+        needs: changes
+        if: ${{ needs.changes.outputs.backend == 'true' }}
+        runs-on: ubuntu-latest
+
+        # OIDC: lets configure-aws-credentials assume an IAM role without long-lived keys.
+        permissions:
+            id-token: write
+            contents: read
+
+        # All npm/node steps run inside the NestJS app.
+        defaults:
+            run:
+                working-directory: server
+
+        env:
+            AWS_REGION: eu-north-1
+            AWS_ACCOUNT_ID: '084828568655'
+            ECR_REPOSITORY: my-mojo-app
+            IMAGE_TAG: latest
+            LOCAL_IMAGE: mojo-app:latest
+            # Existing ECS task definition family + the container name inside it.
+            ECS_TASK_DEFINITION: mojo-task-definition
+            ECS_CONTAINER_NAME: mojo-container
+
+        # gate:backend boots contract/realtime/integration tests against real
+        # Postgres + Redis, so provide them as service containers.
+        services:
+            postgres:
+                image: postgres:16-alpine
+                env:
+                    POSTGRES_USER: postgres
+                    POSTGRES_PASSWORD: postgres
+                    POSTGRES_DB: mojo_test
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd "pg_isready -U postgres"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+            redis:
+                image: redis:7-alpine
+                ports:
+                    - 6379:6379
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+                  cache-dependency-path: server/package-lock.json
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Generate Prisma client
+              run: npx prisma generate
+
+            # ── 1. Type checks ────────────────────────────────────────
+            - name: Type checks
+              run: npm run typecheck
+
+            # ── 2. Gate checks ────────────────────────────────────────
+            # gate:backend = typecheck + lint + contract/realtime/unit/integration
+            # tests + coverage + npm audit. Needs the service containers above.
+            - name: Gate checks
+              run: npm run gate:backend
+              env:
+                  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mojo_test
+                  REDIS_URL: redis://localhost:6379
+
+            # ── 3. Test ───────────────────────────────────────────────
+            - name: Test
+              run: npm run test
+
+            # ── AWS credentials (OIDC → assume IAM role) ──────────────
+            # Set the AWS_DEPLOY_ROLE_ARN secret to a role trusted by GitHub's
+            # OIDC provider with ECR push + ecs:UpdateService permissions.
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+                  aws-region: ${{ env.AWS_REGION }}
+
+            # ── 4. ECR login ──────────────────────────────────────────
+            - name: Log in to Amazon ECR
+              run: |
+                  aws ecr get-login-password --region "$AWS_REGION" \
+                    | docker login --username AWS --password-stdin \
+                      "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+
+            # ── 5. Build image ────────────────────────────────────────
+            # Dockerfile + build context both live in server/.
+            - name: Build Docker image
+              run: docker build -t "$LOCAL_IMAGE" .
+
+            # ── 6. Tag image ──────────────────────────────────────────
+            # Tag both an immutable :<sha> (what the new revision points at, so
+            # every deploy is a distinct, rollback-able image) and :latest.
+            - name: Tag image for ECR
+              id: image
+              run: |
+                  REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY"
+                  docker tag "$LOCAL_IMAGE" "$REGISTRY:${{ github.sha }}"
+                  docker tag "$LOCAL_IMAGE" "$REGISTRY:$IMAGE_TAG"
+                  echo "uri=$REGISTRY:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+            # ── 7. Push image to ECR ──────────────────────────────────
+            - name: Push image to ECR
+              run: |
+                  REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY"
+                  docker push "$REGISTRY:${{ github.sha }}"
+                  docker push "$REGISTRY:$IMAGE_TAG"
+
+            # ── 8. Register a new revision of the existing task def ──
+            # Pull the current ACTIVE task definition, swap in the new image on
+            # the named container, drop the read-only fields that
+            # register-task-definition rejects, and register a new revision.
+            - name: Register new task definition revision
+              id: register
+              run: |
+                  aws ecs describe-task-definition \
+                    --task-definition "$ECS_TASK_DEFINITION" \
+                    --region "$AWS_REGION" \
+                    --query taskDefinition > task-def.json
+
+                  jq --arg IMAGE "${{ steps.image.outputs.uri }}" --arg NAME "$ECS_CONTAINER_NAME" '
+                    .containerDefinitions |= map(if .name == $NAME then .image = $IMAGE else . end)
+                    | del(.taskDefinitionArn, .revision, .status, .requiresAttributes,
+                          .compatibilities, .registeredAt, .registeredBy)
+                  ' task-def.json > new-task-def.json
+
+                  NEW_ARN=$(aws ecs register-task-definition \
+                    --cli-input-json file://new-task-def.json \
+                    --region "$AWS_REGION" \
+                    --query 'taskDefinition.taskDefinitionArn' --output text)
+                  echo "arn=$NEW_ARN" >> "$GITHUB_OUTPUT"
+
+            # ── 9. Run a standalone task from the new revision (Fargate) ──
+            # No ECS service — launch the task directly. Fargate requires an
+            # awsvpc network configuration (subnets + security groups).
+            - name: Run ECS task
+              run: |
+                  aws ecs run-task \
+                    --cluster "${{ secrets.ECS_CLUSTER }}" \
+                    --task-definition "${{ steps.register.outputs.arn }}" \
+                    --launch-type FARGATE \
+                    --count 1 \
+                    --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.ECS_SUBNETS }}],securityGroups=[${{ secrets.ECS_SECURITY_GROUPS }}],assignedPublicIp=ENABLED}" \
+                    --region "$AWS_REGION"

@@ -1,6 +1,6 @@
 // src/features/chat/hooks/useReadReceipts.ts
 import { useEffect, useRef } from 'react';
-import { socket } from '@/lib/socket';
+import { socket } from '@/hooks/useSocket';
 import { markConversationRead } from '@/features/chat/api';
 import type { Message } from '@/types/entities';
 

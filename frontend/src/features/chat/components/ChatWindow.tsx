@@ -134,10 +134,13 @@ export function ChatWindow({ conversationId }: ChatWindowProps) {
         conversation={conversationSummary}
         isAdmin={isAdmin}
         onInvite={() =>
-          openModal(isGroup ? 'invite-members' : 'create-group')
+          openModal(
+            isGroup ? 'invite-members' : 'create-group',
+            isGroup ? conversationId : undefined,
+          )
         }
         onOpenGroupSettings={
-          isAdmin ? () => openModal('group-settings') : undefined
+          isAdmin ? () => openModal('group-settings', conversationId) : undefined
         }
         onLeaveGroup={isGroup ? () => setConfirm('leave') : undefined}
         onBlock={!isGroup ? () => setConfirm('block') : undefined}

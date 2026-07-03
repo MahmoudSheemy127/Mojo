@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 // We need to capture socket event handlers so we can call them in tests
 const socketHandlers = new Map<string, ((...args: unknown[]) => void)[]>();
 
-vi.mock('@/lib/socket', () => ({
+vi.mock('@/hooks/useSocket', () => ({
   socket: {
     emit: vi.fn(),
     connected: false,

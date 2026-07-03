@@ -4,6 +4,37 @@
 // ClientToServerEvents — events this client emits to the server.
 import type { ApiMessage, Conversation, Presence } from './api';
 
+// ── Notification payload shape (from asyncapi SocketNotification schema) ──────
+export interface SocketNotification {
+  id: string;
+  type:
+    | 'friend_request'
+    | 'friend_request_accepted'
+    | 'group_invite'
+    | 'group_join_request'
+    | 'mention'
+    | 'missed_call'
+    | 'generic';
+  actor: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string | null;
+    bio: string | null;
+    presence: string;
+  } | null;
+  read: boolean;
+  createdAt: string;
+  payload: {
+    requestId?: string | undefined;
+    inviteId?: string | undefined;
+    groupId?: string | undefined;
+    conversationId?: string | undefined;
+    messageId?: string | undefined;
+    text?: string | undefined;
+  };
+}
+
 export interface ServerToClientEvents {
   // ── Messaging ──────────────────────────────────────────────────
   'message:new': (payload: { message: ApiMessage }) => void;
@@ -23,7 +54,7 @@ export interface ServerToClientEvents {
   'presence:changed': (payload: { userId: string; status: Presence }) => void;
 
   // ── Notifications (FR-30) ──────────────────────────────────────
-  'notification:new': (payload: { notification: unknown }) => void;
+  'notification:new': (payload: { notification: SocketNotification }) => void;
 
   // ── Conversations & groups ─────────────────────────────────────
   'conversation:new': (payload: { conversation: Conversation }) => void;

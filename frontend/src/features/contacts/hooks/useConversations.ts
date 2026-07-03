@@ -1,6 +1,8 @@
 // src/features/contacts/hooks/useConversations.ts
+import { useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { useSocketEvent } from '@/hooks/useSocketEvent';
 import type { Conversation, DmConversation } from '@/types/api';
 import { fetchConversations, openDm } from '@/features/chat/api';
 
@@ -9,13 +11,33 @@ export const conversationsKey = ['conversations'] as const;
 
 /** Query: all active chat sessions sorted by most-recent activity. */
 export function useConversations() {
-  return useQuery<Conversation[]>({
+  const queryClient = useQueryClient();
+
+  const query = useQuery<Conversation[]>({
     queryKey: conversationsKey,
     queryFn: async () => {
       const res = await fetchConversations();
       return res.data;
     },
   });
+
+  // socket: new conversation → prepend to the list (e.g. accepted DM)
+  const onConversationNew = useCallback(
+    (payload: { conversation: Conversation }) => {
+      queryClient.setQueryData<Conversation[]>(
+        [...conversationsKey],
+        (old) => {
+          if (!old) return [payload.conversation];
+          if (old.some((c) => c.id === payload.conversation.id)) return old;
+          return [payload.conversation, ...old];
+        },
+      );
+    },
+    [queryClient],
+  );
+  useSocketEvent('conversation:new', onConversationNew);
+
+  return query;
 }
 
 /**

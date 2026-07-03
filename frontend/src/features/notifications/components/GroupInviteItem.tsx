@@ -4,13 +4,19 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { MessageTimestamp } from '@/components/shared/MessageTimestamp';
 import { cn } from '@/utils/cn';
+import { useNotificationActions } from '../hooks/useNotificationActions';
 
 interface GroupInviteItemProps {
   notification: Notification;
 }
 
-/** Group invitation with Accept / Decline. */
+/** Group invitation with Accept / Decline (FR-19). */
 export function GroupInviteItem({ notification }: GroupInviteItemProps) {
+  const { acceptGroupInvite, declineGroupInvite } = useNotificationActions();
+  const { groupId, inviteId } = notification;
+  const canAct = Boolean(groupId && inviteId);
+  const busy = acceptGroupInvite.isPending || declineGroupInvite.isPending;
+
   return (
     <li
       className={cn(
@@ -22,10 +28,38 @@ export function GroupInviteItem({ notification }: GroupInviteItemProps) {
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <p className="text-sm text-text-normal">{notification.text}</p>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="primary">
+          <Button
+            size="sm"
+            variant="primary"
+            isLoading={acceptGroupInvite.isPending}
+            disabled={busy || !canAct}
+            onClick={() =>
+              groupId &&
+              inviteId &&
+              acceptGroupInvite.mutate({
+                groupId,
+                inviteId,
+                notifId: notification.id,
+              })
+            }
+          >
             Accept
           </Button>
-          <Button size="sm" variant="ghost">
+          <Button
+            size="sm"
+            variant="ghost"
+            isLoading={declineGroupInvite.isPending}
+            disabled={busy || !canAct}
+            onClick={() =>
+              groupId &&
+              inviteId &&
+              declineGroupInvite.mutate({
+                groupId,
+                inviteId,
+                notifId: notification.id,
+              })
+            }
+          >
             Decline
           </Button>
         </div>

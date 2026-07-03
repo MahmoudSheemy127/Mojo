@@ -8,6 +8,7 @@ import { IconButton } from '@/components/ui/IconButton';
 import { Popover } from '@/components/ui/Popover';
 import { PresenceDot } from '@/components/shared/PresenceDot';
 import { NotificationList } from '@/features/notifications';
+import { useNotificationCount } from '@/features/notifications/hooks/useNotifications';
 import {
   PresenceSelector,
   toUiPresence,
@@ -21,8 +22,6 @@ import type { Presence } from '@/types/entities';
 
 type OpenPopover = 'notifications' | 'profile' | null;
 
-const UNREAD_NOTIFICATIONS = 2;
-
 /**
  * Persistent top bar: app name, Find friends entry, notification bell, and the
  * profile/presence/settings popover. Only one popover open at a time.
@@ -34,6 +33,7 @@ export function HeaderBar() {
   const { data: me } = useMe();
   const updatePresence = useUpdatePresence();
   const logout = useLogout();
+  const unreadCount = useNotificationCount();
 
   const presence: Presence = me ? toUiPresence(me.presence) : 'offline';
   const displayName = me?.displayName ?? 'You';
@@ -82,13 +82,13 @@ export function HeaderBar() {
             >
               <span aria-hidden>🔔</span>
               <span className="absolute -right-1 -top-1">
-                <Badge count={UNREAD_NOTIFICATIONS} />
+                <Badge count={unreadCount} />
               </span>
             </IconButton>
           }
           className="p-0"
         >
-          <NotificationList />
+          {open === 'notifications' && <NotificationList />}
         </Popover>
 
         <Popover

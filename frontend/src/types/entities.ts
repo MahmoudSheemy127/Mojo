@@ -80,4 +80,16 @@ export interface Notification {
   unread?: boolean | undefined;
   /** Group context for invite / join-request notifications. */
   groupName?: string | undefined;
+  // ── Payload ids (from the server notification) used to dispatch the
+  //    type-specific action endpoint and mention navigation. ──
+  /** Contact request id — friend-request accept/decline. */
+  requestId?: string | undefined;
+  /** Invite id — group-invite accept/decline. */
+  inviteId?: string | undefined;
+  /** Group id — group-invite and join-request actions. */
+  groupId?: string | undefined;
+  /** Conversation id — mention navigation target. */
+  conversationId?: string | undefined;
+  /** Message id — mention navigation target. */
+  messageId?: string | undefined;
 }

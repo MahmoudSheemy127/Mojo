@@ -10,7 +10,7 @@ import { server } from '@/mocks/server';
 import { useAuthStore } from '@/store/authStore';
 import type { PublicUser } from '@/types/api';
 
-vi.mock('@/lib/socket', () => ({
+vi.mock('@/hooks/useSocket', () => ({
   socket: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), connected: false },
 }));
 

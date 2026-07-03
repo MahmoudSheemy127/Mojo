@@ -9,6 +9,9 @@ import {
   InviteMembersModal,
   GroupSettingsModal,
 } from '@/features/groups';
+import { usePresenceFeed } from '@/features/presence/hooks/usePresenceFeed';
+import { usePresence } from '@/features/presence/hooks/usePresence';
+import { useSocket } from '@/hooks/useSocket';
 import { useSocketStore } from '@/store/socketStore';
 import { OverlayContext, type ModalType } from './overlayContext';
 
@@ -19,12 +22,20 @@ import { OverlayContext, type ModalType } from './overlayContext';
  */
 export default function AppLayout() {
   const [activeModal, setActiveModal] = useState<ModalType | null>(null);
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const socketStatus = useSocketStore((s) => s.status);
+
+  useSocket();
+  usePresenceFeed();
+  usePresence();
 
   const overlay = useMemo(
     () => ({
       activeModal,
-      openModal: (type: ModalType) => setActiveModal(type),
+      openModal: (type: ModalType, groupId?: string) => {
+        setActiveModal(type);
+        if (groupId !== undefined) setActiveGroupId(groupId);
+      },
       closeModal: () => setActiveModal(null),
     }),
     [activeModal],
@@ -48,14 +59,20 @@ export default function AppLayout() {
       {/* Overlay layer — one modal at a time. */}
       <FindFriendsModal open={activeModal === 'find-friends'} onClose={close} />
       <CreateGroupModal open={activeModal === 'create-group'} onClose={close} />
-      <InviteMembersModal
-        open={activeModal === 'invite-members'}
-        onClose={close}
-      />
-      <GroupSettingsModal
-        open={activeModal === 'group-settings'}
-        onClose={close}
-      />
+      {activeGroupId && (
+        <InviteMembersModal
+          open={activeModal === 'invite-members'}
+          onClose={close}
+          groupId={activeGroupId}
+        />
+      )}
+      {activeGroupId && (
+        <GroupSettingsModal
+          open={activeModal === 'group-settings'}
+          onClose={close}
+          groupId={activeGroupId}
+        />
+      )}
     </OverlayContext.Provider>
   );
 }

@@ -89,3 +89,46 @@ export type SendMessageRequest =
   operations['sendMessage']['requestBody']['content']['application/json'];
 export type SendMessageResponse =
   operations['sendMessage']['responses']['201']['content']['application/json'];
+
+// ── Groups (FR-18–23) ────────────────────────────────────────────
+export type GroupRole = components['schemas']['GroupRole'];
+export type Group = components['schemas']['Group'];
+export type ApiGroupMember = components['schemas']['GroupMember'];
+export type CreateGroupRequest =
+  operations['createGroup']['requestBody']['content']['application/json'];
+export type CreateGroupResponse =
+  operations['createGroup']['responses']['201']['content']['application/json'];
+export type GetGroupResponse =
+  operations['getGroup']['responses']['200']['content']['application/json'];
+export type UpdateGroupRequest =
+  operations['updateGroup']['requestBody']['content']['application/json'];
+export type UpdateGroupResponse =
+  operations['updateGroup']['responses']['200']['content']['application/json'];
+export type ListGroupMembersResponse =
+  operations['listGroupMembers']['responses']['200']['content']['application/json'];
+export type AddGroupMembersRequest =
+  operations['addGroupMembers']['requestBody']['content']['application/json'];
+export type AddGroupMembersResponse =
+  operations['addGroupMembers']['responses']['201']['content']['application/json'];
+export type ChangeMemberRoleRequest =
+  operations['changeMemberRole']['requestBody']['content']['application/json'];
+export type ChangeMemberRoleResponse =
+  operations['changeMemberRole']['responses']['200']['content']['application/json'];
+export type CreateInviteLinkResponse =
+  operations['createInviteLink']['responses']['201']['content']['application/json'];
+export type GroupAvatarUploadResponse =
+  operations['uploadGroupAvatar']['responses']['200']['content']['application/json'];
+export type AcceptGroupInviteResponse =
+  operations['acceptGroupInvite']['responses']['200']['content']['application/json'];
+
+// ── Notifications (FR-30) ────────────────────────────────────────
+export type ApiNotification = components['schemas']['Notification'];
+export type NotificationType = components['schemas']['NotificationType'];
+export type NotificationPayload = components['schemas']['NotificationPayload'];
+export type NotificationsListResponse =
+  operations['listNotifications']['responses']['200']['content']['application/json'];
+export type NotificationCountResponse =
+  operations['getNotificationCount']['responses']['200']['content']['application/json'];
+export type MarkNotificationsSeenRequest = NonNullable<
+  operations['markNotificationsSeen']['requestBody']
+>['content']['application/json'];

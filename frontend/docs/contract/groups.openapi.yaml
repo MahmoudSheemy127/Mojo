@@ -232,6 +232,51 @@ paths:
         '409':
           $ref: './_common.yaml#/components/responses/Conflict'
 
+  /groups/{groupId}/avatar:
+    put:
+      tags: [Groups]
+      summary: Upload group avatar (FR-23) — Admin
+      operationId: uploadGroupAvatar
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '200':
+          description: Avatar uploaded.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [avatarId, avatarUrl]
+                properties:
+                  avatarId: { type: string, format: uuid }
+                  avatarUrl: { type: string }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+    delete:
+      tags: [Groups]
+      summary: Remove group avatar (FR-23) — Admin
+      operationId: deleteGroupAvatar
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '204':
+          description: Avatar removed.
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './_common.yaml#/components/responses/Forbidden'
+
   /groups/{groupId}/invite-link:
     post:
       tags: [Groups]
@@ -350,6 +395,52 @@ paths:
         '404':
           $ref: './_common.yaml#/components/responses/NotFound'
 
+  /groups/{groupId}/invites/{inviteId}/accept:
+    post:
+      tags: [Groups]
+      summary: Accept a group invitation (FR-19)
+      operationId: acceptGroupInvite
+      description: >
+        The invited user accepts a direct group invite and becomes a member. The
+        group's conversation is also delivered via conversation:new. Dispatched from
+        a group_invite notification using payload.inviteId + payload.groupId.
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/InviteId'
+      responses:
+        '200':
+          description: Invitation accepted; caller is now a member.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [group]
+                properties:
+                  group: { $ref: './_common.yaml#/components/schemas/Group' }
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '404':
+          $ref: './_common.yaml#/components/responses/NotFound'
+
+  /groups/{groupId}/invites/{inviteId}/decline:
+    post:
+      tags: [Groups]
+      summary: Decline a group invitation (FR-19)
+      operationId: declineGroupInvite
+      description: >
+        The invited user declines a direct group invite. Dispatched from a
+        group_invite notification using payload.inviteId + payload.groupId.
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/InviteId'
+      responses:
+        '204':
+          description: Invitation declined.
+        '401':
+          $ref: './_common.yaml#/components/responses/Unauthenticated'
+        '404':
+          $ref: './_common.yaml#/components/responses/NotFound'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -367,6 +458,11 @@ components:
       schema: { type: string, format: uuid }
     RequestId:
       name: requestId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    InviteId:
+      name: inviteId
       in: path
       required: true
       schema: { type: string, format: uuid }

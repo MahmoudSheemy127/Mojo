@@ -25,7 +25,7 @@ export class WsJwtGuard implements CanActivate {
         /* Get token */
         const token = socket.handshake.query.token;
 
-        console.log("Token ", token)
+        console.log("Tokennnnn ", token)
         
         /* Call JWT Service (Validate token) */
         try{

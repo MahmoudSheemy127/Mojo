@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/3</span>
+                <span class='fraction'>3/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">76.92% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/11</span>
+                <span class='fraction'>10/13</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">40% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/5</span>
+                <span class='fraction'>2/5</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/3</span>
+                <span class='fraction'>3/3</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -151,11 +151,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -168,7 +166,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -192,14 +192,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// src/features/groups/components/MemberRow.tsx
-import type { GroupMember } from '@/types/entities';
+import type { ApiGroupMember } from '@/types/api';
 import { Avatar } from '@/components/ui/Avatar';
 import { DropdownMenu } from '@/components/ui/DropdownMenu';
 import { IconButton } from '@/components/ui/IconButton';
 import { RoleBadge } from '@/components/shared/RoleBadge';
 &nbsp;
 interface MemberRowProps {
-  member: GroupMember;
+  member: ApiGroupMember;
   /** Whether the current viewer can manage this member. */
   manageable?: boolean | undefined;
   onPromote?: (() =&gt; void) | undefined;
@@ -208,20 +208,20 @@ interface MemberRowProps {
 }
 &nbsp;
 /** A group member row: avatar, name, role badge, action menu. */
-export function <span class="fstat-no" title="function not covered" >MemberRow({</span>
+export function MemberRow({
   member,
-  manageable = <span class="branch-0 cbranch-no" title="branch not covered" >false,</span>
+  manageable = false,
   onPromote,
   onDemote,
   onRemove,
 }: MemberRowProps) {
-  const isAdmin = <span class="cstat-no" title="statement not covered" >member.role === 'admin';</span>
+  const isAdmin = member.role === 'admin';
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  return (</span>
+  return (
     &lt;div className="group flex items-center gap-3 rounded-card px-2 py-2 hover:bg-bg-hover"&gt;
       &lt;Avatar
         name={member.user.displayName}
-        src={member.user.avatarUrl}
+        src={member.user.avatarUrl ?? undefined}
         size="sm"
       /&gt;
       &lt;span className="min-w-0 flex-1 truncate text-sm text-text-normal"&gt;
@@ -231,8 +231,8 @@ export function <span class="fstat-no" title="function not covered" >MemberRow({
 &nbsp;
       {manageable &amp;&amp; (
         &lt;DropdownMenu
-<span class="fstat-no" title="function not covered" >          trigger={({</span> toggle }) =&gt; (
-<span class="cstat-no" title="statement not covered" >            &lt;IconButton</span>
+          trigger={({ toggle }) =&gt; (
+            &lt;IconButton
               aria-label={`Manage ${member.user.displayName}`}
               onClick={toggle}
               className="opacity-0 group-hover:opacity-100 focus:opacity-100"
@@ -242,11 +242,11 @@ export function <span class="fstat-no" title="function not covered" >MemberRow({
           )}
           items={[
             isAdmin
-              ? { label: 'Demote to member', onSelect: <span class="fstat-no" title="function not covered" >onDemote ?? (() =&gt; {</span>}) }
-              : { label: 'Promote to admin', onSelect: <span class="fstat-no" title="function not covered" >onPromote ?? (() =&gt; {</span>}) },
+              ? { label: 'Demote to member', onSelect: <span class="fstat-no" title="function not covered" ><span class="branch-1 cbranch-no" title="branch not covered" >onDemote ?? (() =&gt; {</span>}) }</span>
+              : { label: 'Promote to admin', onSelect: <span class="fstat-no" title="function not covered" ><span class="branch-1 cbranch-no" title="branch not covered" >onPromote ?? (() =&gt; {</span>}) }</span>,
             {
               label: 'Remove from group',
-              onSelect: <span class="fstat-no" title="function not covered" >onRemove ?? (() =&gt; {</span>}),
+              onSelect: <span class="fstat-no" title="function not covered" ><span class="branch-1 cbranch-no" title="branch not covered" >onRemove ?? (() =&gt; {</span>}),</span>
               variant: 'danger',
             },
           ]}
@@ -262,7 +262,7 @@ export function <span class="fstat-no" title="function not covered" >MemberRow({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-06-26T22:17:24.109Z
+                at 2026-06-28T16:22:39.767Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

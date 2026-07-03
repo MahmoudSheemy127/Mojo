@@ -1,6 +1,6 @@
 ## What needed to be practiced (Backend principles)
 
-- GraphQL 4
+- GraphQL 4 [Postponed]
 - Observability Stack Depth (Logging, Metrics & Tracing): 8
     - Logging: Pino
         - General logging, error logs and healthy logs
@@ -8,13 +8,25 @@
     - Metrics: Catching the application metrics ()
     - 
 - Testing 9
-- DB & Query optimization 5
+- DB & Query optimization 7
 - gRPC 10
-- System Design communication (CAP, distributed transactions, etc..) 7
-- OAuth 3
+- System Design communication (CAP, distributed transactions, etc..) 6
+- OAuth *
 - Streaming and websocket *
 - Claude *
 - Cheap deployment and shipping 11  
 - SDLC *
-- Caching 6
-- Devops, CICD
+- Caching 8
+- Devops, CICD 5:
+    - CICD for both ends
+    - Cheap deployment version discover
+    - AWS deployment version:
+        - Complete CICD workflow implemented on AWS
+        - Whenever to go live I go live
+        - 
+- Convert to public (How to handle a codebase that maybe would later be a good attraction point)
+
+- Git best flow:
+    - Features and issue plans that are taken bit by bit by claude
+    - Checking the deployment
+    - 

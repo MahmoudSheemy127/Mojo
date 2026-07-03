@@ -23,7 +23,7 @@ import { MessageTimestamp } from '@/components/shared/MessageTimestamp';
 import { ConnectionStatusBanner } from '@/components/shared/ConnectionStatusBanner';
 import { UserAvatarWithPresence } from '@/components/shared/UserAvatarWithPresence';
 import { MemberPicker } from '@/components/shared/MemberPicker';
-import type { User } from '@/types/entities';
+import type { PublicUser } from '@/types/api';
 
 describe('Chip', () => {
   it('renders and removes', async () => {
@@ -183,15 +183,15 @@ describe('misc shared atoms', () => {
 });
 
 describe('MemberPicker', () => {
-  const candidates: User[] = [
-    { id: 'u1', username: 'aria', displayName: 'Aria Chen' },
-    { id: 'u2', username: 'ben', displayName: 'Ben Okafor' },
+  const candidates: PublicUser[] = [
+    { id: 'u1', username: 'aria', displayName: 'Aria Chen', avatarUrl: null, bio: null, presence: 'online' },
+    { id: 'u2', username: 'ben', displayName: 'Ben Okafor', avatarUrl: null, bio: null, presence: 'away' },
   ];
 
   it('selects and removes members', async () => {
     const user = userEvent.setup();
     function Harness() {
-      const [value, setValue] = useState<User[]>([]);
+      const [value, setValue] = useState<PublicUser[]>([]);
       return (
         <MemberPicker candidates={candidates} value={value} onChange={setValue} />
       );
