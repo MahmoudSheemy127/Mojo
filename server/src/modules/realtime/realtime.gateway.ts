@@ -32,7 +32,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
                 const token = socket.handshake.auth.token ?? socket.handshake.query['token'];
                 const payload = this.jwtService.verify(token as string, { secret: process.env.JWT_ACCESS_SECRET });
                 socket.data.user = { id: payload.sub };
-                console.log("Valid token");
+                console.log("Valid token !");
                 next();
             } catch {
                 next(new Error('UNAUTHENTICATED'));
