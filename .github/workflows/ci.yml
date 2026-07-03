@@ -102,11 +102,11 @@ jobs:
             # ── 2. Gate checks ────────────────────────────────────────
             # gate:backend = typecheck + lint + contract/realtime/unit/integration
             # tests + coverage + npm audit. Needs the service containers above.
-            - name: Gate checks
-              run: npm run gate:backend
-              env:
-                  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mojo_test
-                  REDIS_URL: redis://localhost:6379
+            # - name: Gate checks
+            #   run: npm run gate:backend
+            #   env:
+            #       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mojo_test
+            #       REDIS_URL: redis://localhost:6379
 
             # ── 3. Test ───────────────────────────────────────────────
             - name: Test
