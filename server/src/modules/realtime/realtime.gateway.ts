@@ -1,15 +1,13 @@
-import { WsJwtGuard } from "@common/guards/ws-jwt.guard";
 import { ClientToServerEvents, ServerToClientEvents } from "@common/types/socket-events";
 import { ConversationsService } from "@modules/conversations/conversations.service";
 import { PresenceService } from "@modules/presence/presence.service";
-import { Logger, UseGuards } from "@nestjs/common";
+import { Logger } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io";
 
 
 @WebSocketGateway({ cors: { origin: 'http://localhost:5173', credentials: true } })
-// @UseGuards(WsJwtGuard)
 export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
 
 
