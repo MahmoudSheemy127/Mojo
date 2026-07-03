@@ -8,7 +8,12 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npx prisma generate
+# prisma generate never connects to the DB — it only reads the schema. Prisma 7
+# still requires DATABASE_URL to be *defined* (env('DATABASE_URL') in
+# prisma.config.ts), so give it a throwaway value. The real URL is injected at
+# runtime by the ECS task definition; it is never baked into the image.
+RUN DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder" \
+    npx prisma generate
 RUN npm run build
 
 # ── Stage 2: production ───────────────────────────────────────
