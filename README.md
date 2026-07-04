@@ -4,6 +4,8 @@ A discord clone fullstack application with a different vibe.
 
 
 
+![Demo](docs/demo-view.jpg)
+
 ## Features
 
 - Explore and Add friends
