@@ -46,7 +46,7 @@ type UserPublicRow = Prisma.UserGetPayload<{ select: typeof userPublicSelect }>;
 const conversationInclude = {
   lastMessage: { include: { attachments: true } },
   userChats: { include: { user: { select: userPublicSelect } } },
-  group: { include: { _count: { select: { members: true } }, members: true } },
+  group: { include: { _count: { select: { members: true } }, members: { include: { user: { select: userPublicSelect } } } } },
   reads: true,
 } satisfies Prisma.ConversationInclude;
 
@@ -334,12 +334,14 @@ export class ConversationsService {
     }
 
     const myMember = row.group?.members.find((m) => m.userId === callerId);
+    const members = row.group?.members.map((m) => this.toPublicUser(m.user)) ?? [];
     return {
       ...base,
       type: 'group',
       name: row.group!.name,
       avatarUrl: row.group!.avatarUrl,
       memberCount: row.group!._count.members,
+      members,
       role: (myMember?.role ?? 'MEMBER').toLowerCase() as 'admin' | 'member',
     };
   }

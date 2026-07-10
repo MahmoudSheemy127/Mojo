@@ -907,6 +907,7 @@ export interface components {
             name: string;
             avatarUrl: string | null;
             memberCount: number;
+            members: components["schemas"]["PublicUser"][];
             role: components["schemas"]["GroupRole"];
         } & {
             /**

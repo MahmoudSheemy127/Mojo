@@ -48,6 +48,16 @@ export function ChatWindow({ conversationId }: ChatWindowProps) {
         avatarUrl: conversation.otherUser.avatarUrl,
       });
     }
+
+    if (conversation?.type === 'group') {
+      conversation.members.forEach((member) => {
+        map.set(member.id, {
+          displayName: member.displayName,
+          avatarUrl: member.avatarUrl,
+        });
+      });
+    }
+
     return map;
   }, [currentUser, conversation]);
 

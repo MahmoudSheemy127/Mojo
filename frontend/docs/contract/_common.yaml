@@ -162,12 +162,15 @@ components:
       allOf:
         - $ref: '#/components/schemas/ConversationBase'
         - type: object
-          required: [name, avatarUrl, memberCount, role]
+          required: [name, avatarUrl, memberCount, members, role]
           properties:
             type: { type: string, const: group }
             name: { type: string }
             avatarUrl: { type: [string, "null"] }
             memberCount: { type: integer }
+            members:
+              type: array
+              items: { $ref: '#/components/schemas/PublicUser' }
             role: { $ref: '#/components/schemas/GroupRole' }
 
     Conversation:

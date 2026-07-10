@@ -57,6 +57,7 @@ export interface GroupConversationView extends ConversationBaseView {
   name: string;
   avatarUrl: string | null;
   memberCount: number;
+  members: PublicUserView[];
   role: 'admin' | 'member';
 }
 
