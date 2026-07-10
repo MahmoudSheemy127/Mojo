@@ -45,7 +45,7 @@ const socket = io(VITE_SOCKET_URL, {
 
 ---
 
-## Client → Server events
+## Client → Server events 
 
 > These are ephemeral signals. They take an optional ack callback where noted.
 
@@ -84,7 +84,7 @@ All payloads use the shared entity types from `README.md`.
 
 ### Typing
 | Event | Payload | Trigger | FE handler |
-|---|---|---|---|
+  |---|---|---|---|
 | `typing:start` | `{ conversationId: string, userId: string }` | Another user is typing (FR-15) | `chat/useTyping` — show indicator |
 | `typing:stop` | `{ conversationId: string, userId: string }` | They stopped | `chat/useTyping` — hide indicator |
 

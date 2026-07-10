@@ -45,8 +45,20 @@ const groupRow = (over: Record<string, unknown> = {}) => ({
     avatarUrl: null,
     _count: { members: 3 },
     members: [
-      { userId: 'u1', role: 'ADMIN' },
-      { userId: 'u2', role: 'MEMBER' },
+      {
+        userId: '3c0377c4-6066-4a72-aef7-ae3129380cd6',
+        role: 'MEMBER',
+        user: {
+          id: '3c0377c4-6066-4a72-aef7-ae3129380cd6',
+          displayName: 'ahmed120',
+          avatarUrl: null,
+          bio: null,
+          presence: 'ONLINE',
+          account: { username: 'ahmed120' },
+        },
+      },
+      { userId: 'u1', role: 'ADMIN', user: userRow('u1') },
+      { userId: 'u2', role: 'MEMBER', user: userRow('u2') },
     ],
   },
   reads: [],
@@ -139,6 +151,16 @@ describe('ConversationsService', () => {
         name: 'Team',
         memberCount: 3,
         role: 'admin',
+        members: expect.arrayContaining([
+          {
+            id: '3c0377c4-6066-4a72-aef7-ae3129380cd6',
+            username: 'ahmed120',
+            displayName: 'ahmed120',
+            avatarUrl: null,
+            bio: null,
+            presence: 'online',
+          },
+        ]),
       });
     });
 
