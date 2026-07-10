@@ -3,6 +3,8 @@ name: CI
 on:
     push:
         branches: [main]
+    pull_request:
+        branches: [main]
 
 # Cancel superseded runs on the same branch.
 concurrency:
@@ -23,13 +25,117 @@ jobs:
                   filters: |
                       backend:
                           - 'server/**'
-                      frontend:
-                          - 'frontend/**'
+                       frontend:
+                           - 'frontend/**'
+      
+    pr-checks-be:
+        name: PR Checks (${{ matrix.project }})
+        if: ${{ github.event_name == 'pull_request' }}
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: server
+
+        # gate:backend boots contract/realtime/integration tests against real
+        # Postgres + Redis, so provide them as service containers.
+        services:
+            postgres:
+                image: postgres:16-alpine
+                env:
+                    POSTGRES_USER: postgres
+                    POSTGRES_PASSWORD: postgres
+                    POSTGRES_DB: mojo_test
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd "pg_isready -U postgres"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+            redis:
+                image: redis:7-alpine
+                ports:
+                    - 6379:6379
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+                  cache-dependency-path: server/package-lock.json
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Generate Prisma client
+              run: npx prisma generate
+              env:
+                  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mojo_test
+                  REDIS_URL: redis://localhost:6379
+
+            # ── 1. Type checks ────────────────────────────────────────
+            - name: Type checks
+              run: npm run typecheck
+
+            # ── 2. Gate checks ────────────────────────────────────────
+            # gate:backend = typecheck + lint + contract/realtime/unit/integration
+            # tests + coverage + npm audit. Needs the service containers above.
+            # - name: Gate checks
+            #   run: npm run gate:backend
+            #   env:
+            #       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mojo_test
+            #       REDIS_URL: redis://localhost:6379
+
+            # ── 3. Test ───────────────────────────────────────────────
+            - name: Test
+              run: npm run test
+
+    pr-checks-fe:
+        name: PR Checks (${{ matrix.project }})
+        if: ${{ github.event_name == 'pull_request' }}
+        runs-on: ubuntu-latest
+        # The SPA is a pure static build — everything runs inside frontend/.
+        defaults:
+            run:
+                working-directory: frontend
+
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+                  cache-dependency-path: frontend/package-lock.json
+
+            - name: Install dependencies
+              run: npm ci
+
+            # gate:frontend = contract:types + typecheck + lint + test:cov
+            - name: Gate checks
+              run: npm run gate:frontend
+
+            # VITE_* values are public and baked into the bundle at build time,
+            # so they live in repo Variables (not Secrets). Changing the backend
+            # URL means rebuilding.
+            - name: Build
+              run: npm run build
+              env:
+                  VITE_API_URL: ${{ secrets.VITE_API_URL }}
+                  VITE_SOCKET_URL: ${{ secrets.VITE_SOCKET_URL }}
+
+
+
 
     deploy-backend:
         name: Deploy Backend
         needs: changes
-        if: ${{ needs.changes.outputs.backend == 'true' }}
+        if: ${{ github.event_name == 'push' && needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
 
         # OIDC: lets configure-aws-credentials assume an IAM role without long-lived keys.
@@ -191,7 +297,7 @@ jobs:
     deploy-frontend:
         name: Deploy Frontend
         needs: changes
-        if: ${{ needs.changes.outputs.frontend == 'true' }}
+        if: ${{ github.event_name == 'push' && needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
 
         # OIDC: assume the AWS deploy role without long-lived keys.
