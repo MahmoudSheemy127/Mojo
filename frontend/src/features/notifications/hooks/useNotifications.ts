@@ -92,20 +92,13 @@ export function mapNotification(notif: RawNotification): Notification {
 }
 
 /**
- * Provides the notifications feed (key `['notifications']`). Loaded from the REST
- * endpoint, newest first; live notifications arrive via `notification:new` and are
- * prepended to the cache (also bumping the unseen count).
+ * Subscribes to `notification:new` and prepends live notifications to the feed
+ * cache (also bumping the unseen count). Must live in an always-mounted component
+ * (e.g. HeaderBar) — if it only ran inside the dropdown, the socket listener would
+ * not exist while the dropdown is closed and live events would be dropped.
  */
-export function useNotifications() {
+export function useNotificationSocket() {
   const queryClient = useQueryClient();
-
-  const query = useQuery<Notification[]>({
-    queryKey: notificationsKey,
-    queryFn: async () => {
-      const res = await fetchNotifications();
-      return res.data.map(mapNotification);
-    },
-  });
 
   const onNotificationNew = useCallback(
     (payload: { notification: SocketNotification }) => {
@@ -122,14 +115,28 @@ export function useNotifications() {
     [queryClient],
   );
   useSocketEvent('notification:new', onNotificationNew);
+}
 
-  return query;
+/**
+ * Provides the notifications feed (key `['notifications']`). Loaded from the REST
+ * endpoint, newest first; live notifications arrive via `notification:new`
+ * (subscribed once in HeaderBar via `useNotificationSocket`) and are prepended
+ * to the cache.
+ */
+export function useNotifications() {
+  return useQuery<Notification[]>({
+    queryKey: notificationsKey,
+    queryFn: async () => {
+      const res = await fetchNotifications();
+      return res.data.map(mapNotification);
+    },
+  });
 }
 
 /**
  * Unseen notification count (key `['notifications', 'count']`), drives the bell
  * badge. Loaded from `/notifications/count`, live-incremented by `notification:new`
- * (see `useNotifications`) and reset to 0 by the mark-seen mutation.
+ * (see `useNotificationSocket`) and reset to 0 by the mark-seen mutation.
  */
 export function useNotificationCount(): number {
   const query = useQuery<number>({

@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import {
   useNotifications,
+  useNotificationSocket,
   useNotificationCount,
   useMarkNotificationsSeen,
   mapNotification,
@@ -134,9 +135,13 @@ describe('useNotifications', () => {
 
   it('prepends a notification on notification:new and bumps the count', async () => {
     emptyFeed();
-    const { result } = renderHook(() => useNotifications(), {
-      wrapper: makeWrapper(qc),
-    });
+    const { result } = renderHook(
+      () => {
+        useNotificationSocket();
+        return useNotifications();
+      },
+      { wrapper: makeWrapper(qc) },
+    );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     fireEvent('notification:new', { notification: mockSocketNotif });
@@ -150,7 +155,7 @@ describe('useNotifications', () => {
 
   it('maps group_invite and group_join_request kinds from the socket', async () => {
     emptyFeed();
-    renderHook(() => useNotifications(), { wrapper: makeWrapper(qc) });
+    renderHook(() => useNotificationSocket(), { wrapper: makeWrapper(qc) });
 
     fireEvent('notification:new', {
       notification: { ...mockSocketNotif, id: 'gi', type: 'group_invite' },

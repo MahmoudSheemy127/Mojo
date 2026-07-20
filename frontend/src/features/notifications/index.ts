@@ -3,6 +3,7 @@
 export { NotificationList } from './components/NotificationList';
 export {
   useNotifications,
+  useNotificationSocket,
   useNotificationCount,
   useMarkNotificationsSeen,
   mapNotification,
