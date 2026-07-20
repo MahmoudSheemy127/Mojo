@@ -86,6 +86,13 @@ export class NotificationsService {
     return { count };
   }
 
+  /* Remove notification */
+  async removeNotification(requestId: string): Promise<void> {
+    await this.prisma.notification.deleteMany({
+      where: { requestId },
+    });
+  }
+
   /**
    * POST /notifications/seen — mark the caller's unseen notifications seen. With `ids`, only
    * those are marked; otherwise all unseen. Scoped to the caller so one user can never flip
@@ -114,10 +121,12 @@ export class NotificationsService {
         type: input.type,
         actorId: input.actorId ?? null,
         requestId: input.requestId ?? null,
-        payload: input.payload ?? Prisma.JsonNull,
+        payload: input.payload ?? Prisma.JsonNull,  
       },
       include: notificationInclude,
     });
+
+    console.log('Created notification:', row);
 
     const notification = toNotificationView(row);
     this.events.emit(AppEvent.NotificationCreated, {

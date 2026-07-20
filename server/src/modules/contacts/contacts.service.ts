@@ -124,6 +124,8 @@ export class ContactsService {
    * and returns that now-accepted request. Blocked either direction → 403 BLOCKED.
    */
   async sendRequest(callerId: string, targetUserId: string): Promise<ContactRequest> {
+
+    console.log(`sendRequest called with callerId: ${callerId}, targetUserId: ${targetUserId}`);
     if (callerId === targetUserId) {
       throw new UnprocessableEntityException({
         code: 'VALIDATION_ERROR',
@@ -203,6 +205,8 @@ export class ContactsService {
     // Side effect: notify the target. The actor (caller) profile is resolved server-side
     // from actorId by the serializer, so the FE renders it without an extra fetch; payload
     // only carries the requestId the FE needs to accept/decline.
+    console.log(`Creating notification for targetUserId: ${targetUserId}, callerId: ${callerId}, requestId: ${created.id}`);
+    
     await this.notificationService.create({
       recipientId: targetUserId,
       type: NotificationType.FRIEND_REQUEST,
@@ -265,6 +269,9 @@ export class ContactsService {
       type: NotificationType.FRIEND_REQUEST_ACCEPTED,
       actorId: callerId,
     });
+
+    /* Remove the notification related to the friend request */
+    await this.notificationService.removeNotification(requestId);
 
     return { friend: this.toPublicUser(request.sourceUser) };
   }

@@ -8,7 +8,9 @@ import { useOverlay } from '@/layouts/overlayContext';
 export default function HomePage() {
   const { conversationId } = useParams();
 
+
   if (conversationId) {
+    console.log('Rendering ChatWindow for conversationId:', conversationId);
     return <ChatWindow conversationId={conversationId} />;
   }
 

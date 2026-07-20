@@ -8,7 +8,10 @@ import { IconButton } from '@/components/ui/IconButton';
 import { Popover } from '@/components/ui/Popover';
 import { PresenceDot } from '@/components/shared/PresenceDot';
 import { NotificationList } from '@/features/notifications';
-import { useNotificationCount } from '@/features/notifications/hooks/useNotifications';
+import {
+  useNotificationCount,
+  useNotificationSocket,
+} from '@/features/notifications/hooks/useNotifications';
 import {
   PresenceSelector,
   toUiPresence,
@@ -34,6 +37,9 @@ export function HeaderBar() {
   const updatePresence = useUpdatePresence();
   const logout = useLogout();
   const unreadCount = useNotificationCount();
+  // Always-mounted subscription to notification:new — keeps the feed cache and
+  // bell badge live even while the notifications dropdown is closed.
+  useNotificationSocket();
 
   const presence: Presence = me ? toUiPresence(me.presence) : 'offline';
   const displayName = me?.displayName ?? 'You';
