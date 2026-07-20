@@ -205,7 +205,7 @@ export class ContactsService {
     // Side effect: notify the target. The actor (caller) profile is resolved server-side
     // from actorId by the serializer, so the FE renders it without an extra fetch; payload
     // only carries the requestId the FE needs to accept/decline.
-    console.log(`Creating notification for targetUserId: ${targetUserId}, callerId: ${callerId}, requestId: ${created.id}`);
+    console.log(`Creatingg notification for targetUserId: ${targetUserId}, callerId: ${callerId}, requestId: ${created.id}`);
     
     await this.notificationService.create({
       recipientId: targetUserId,

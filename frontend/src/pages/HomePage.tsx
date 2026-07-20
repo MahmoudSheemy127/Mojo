@@ -10,7 +10,7 @@ export default function HomePage() {
 
 
   if (conversationId) {
-    console.log('Rendering ChatWindow for conversationId:', conversationId);
+    console.log('Rendering ChatWindoww for conversationId:', conversationId);
     return <ChatWindow conversationId={conversationId} />;
   }
 
