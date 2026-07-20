@@ -49,7 +49,9 @@ describe('ContactsService', () => {
     };
     $transaction: jest.Mock;
   };
-  let notifications: { create: jest.Mock };
+  let notifications: {
+    removeNotification(removeNotification: any): unknown; create: jest.Mock 
+};
 
   beforeEach(async () => {
     prisma = {
@@ -75,7 +77,7 @@ describe('ContactsService', () => {
       $transaction: jest.fn(async (cb: (tx: unknown) => unknown) => cb(prisma)),
     };
 
-    notifications = { create: jest.fn().mockResolvedValue(undefined) };
+    notifications = { create: jest.fn().mockResolvedValue(undefined), removeNotification: jest.fn().mockResolvedValue(undefined) };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -278,6 +280,7 @@ describe('ContactsService', () => {
         type: 'FRIEND_REQUEST_ACCEPTED',
         actorId: 'u1', // the acceptor
       });
+      expect(notifications.removeNotification).toHaveBeenCalledWith('req-1'); // Remove the notification related to the friend request
       expect(res.friend).toMatchObject({ id: 'u2', username: 'bob' });
     });
   });
