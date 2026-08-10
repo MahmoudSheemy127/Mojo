@@ -29,7 +29,20 @@ async function bootstrap() {
   app.use(helmet());
   app.use(compression());
 
-  app.enableCors({ origin: config.get<string>('webOrigin'), credentials: true });
+  app.enableCors({ 
+    
+    origin: config.get<string>('webOrigin'), 
+    
+    credentials: true,
+
+    allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+  ],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  });
   app.enableShutdownHooks();
 
   await app.listen(config.get<number>('port') ?? 4000);
