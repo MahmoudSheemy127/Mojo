@@ -1,17 +1,12 @@
 // src/features/chat/hooks/useMessages.ts
-import { useCallback } from 'react';
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import type { InfiniteData } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/authStore';
-import { useSocketEvent } from '@/hooks/useSocketEvent';
-import type { ApiMessage, MessagesListResponse, PublicUser } from '@/types/api';
+import type { ApiMessage, PublicUser } from '@/types/api';
 import type { Message, MessageStatus } from '@/types/entities';
 import { fetchMessages } from '../api';
 
 export const messagesKey = (conversationId: string) =>
   ['messages', conversationId] as const;
-
-type MessagesData = InfiniteData<MessagesListResponse>;
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], {
@@ -70,7 +65,6 @@ export function useMessages(
   participants: Map<string, Pick<PublicUser, 'displayName' | 'avatarUrl'>>,
 ) {
   const currentUserId = useAuthStore((s) => s.currentUser?.id);
-  const queryClient = useQueryClient();
 
   const query = useInfiniteQuery({
     queryKey: messagesKey(conversationId),
@@ -78,95 +72,8 @@ export function useMessages(
       fetchMessages(conversationId, pageParam as string | undefined),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    refetchOnMount: 'always',
   });
-
-  // socket: new message → append to newest page
-  const onMessageNew = useCallback(
-    (payload: { message: ApiMessage }) => {
-      if (payload.message.conversationId !== conversationId || payload.message.senderId === currentUserId) return;
-      queryClient.setQueryData<MessagesData>(
-        messagesKey(conversationId),
-        (old) => {
-          if (!old) return old;
-          const pages = old.pages.map((page, idx) => {
-            if (idx !== 0) return page;
-            const alreadyPresent = page.data.some(
-              (m) => m.id === payload.message.id,
-            );
-            if (alreadyPresent) return page;
-            // Replace matching optimistic bubble (same clientNonce) if present
-            const withoutOptimistic = payload.message.clientNonce
-              ? page.data.filter(
-                  (m) => m.clientNonce !== payload.message.clientNonce,
-                )
-              : page.data;
-            return { ...page, data: [...withoutOptimistic, payload.message] };
-          });
-          return { ...old, pages };
-        },
-      );
-    },
-    [conversationId, queryClient],
-  );
-  useSocketEvent('message:new', onMessageNew);
-
-  // socket: message deleted → patch in cache
-  const onMessageDeleted = useCallback(
-    (payload: { conversationId: string; messageId: string }) => {
-      if (payload.conversationId !== conversationId) return;
-      queryClient.setQueryData<MessagesData>(
-        messagesKey(conversationId),
-        (old) => {
-          if (!old) return old;
-          const pages = old.pages.map((page) => ({
-            ...page,
-            data: page.data.map((m) =>
-              m.id === payload.messageId
-                ? {
-                    ...m,
-                    deletedAt: new Date().toISOString(),
-                    content: null,
-                    attachments: [],
-                  }
-                : m,
-            ),
-          }));
-          return { ...old, pages };
-        },
-      );
-    },
-    [conversationId, queryClient],
-  );
-  useSocketEvent('message:deleted', onMessageDeleted);
-
-  // socket: message status update → patch in cache
-  const onMessageStatus = useCallback(
-    (payload: {
-      conversationId: string;
-      messageId: string;
-      status: 'delivered' | 'read';
-      userId: string;
-    }) => {
-      if (payload.conversationId !== conversationId) return;
-      queryClient.setQueryData<MessagesData>(
-        messagesKey(conversationId),
-        (old) => {
-          if (!old) return old;
-          const pages = old.pages.map((page) => ({
-            ...page,
-            data: page.data.map((m) =>
-              m.id === payload.messageId
-                ? { ...m, status: payload.status }
-                : m,
-            ),
-          }));
-          return { ...old, pages };
-        },
-      );
-    },
-    [conversationId, queryClient],
-  );
-  useSocketEvent('message:status', onMessageStatus);
 
   // Flatten pages in reverse order for oldest→newest display
   const messages: Message[] = [...(query.data?.pages ?? [])]
