@@ -1,6 +1,7 @@
 // src/layouts/AppLayout.tsx
 import { useMemo, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
+import { cn } from '@/utils/cn';
 import { HeaderBar } from '@/components/shared/HeaderBar';
 import { ConnectionStatusBanner } from '@/components/shared/ConnectionStatusBanner';
 import { ChatList, FindFriendsModal, useConversationLiveUpdates } from '@/features/contacts';
@@ -25,6 +26,9 @@ export default function AppLayout() {
   const [activeModal, setActiveModal] = useState<ModalType | null>(null);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const socketStatus = useSocketStore((s) => s.status);
+  const location = useLocation();
+  // On mobile the list and the conversation are mutually exclusive views.
+  const showListOnMobile = location.pathname === '/c';
 
   useSocket();
   usePresenceFeed();
@@ -48,11 +52,16 @@ const overlay = useMemo(
 
   return (
     <OverlayContext.Provider value={overlay}>
-      <div className="flex h-screen flex-col bg-bg-deepest">
+      <div className="flex h-dvh flex-col bg-bg-deepest">
         <HeaderBar />
         <div className="flex min-h-0 flex-1">
-          <ChatList />
-          <main className="flex min-w-0 flex-1 flex-col">
+          <ChatList className={showListOnMobile ? 'flex' : 'hidden md:flex'} />
+          <main
+            className={cn(
+              'min-w-0 flex-1 flex-col',
+              showListOnMobile ? 'hidden md:flex' : 'flex',
+            )}
+          >
             <ConnectionStatusBanner status={socketStatus} />
             <Outlet />
           </main>

@@ -61,7 +61,7 @@ export function MessageComposer({
   return (
     <div className="border-t border-bg-deepest bg-bg-chat">
       <AttachmentPreview attachments={[]} />
-      <div className="flex items-end gap-2 p-3">
+      <div className="flex items-end gap-2 p-2 md:p-3">
         <IconButton aria-label="Add attachment" disabled={disabled}>
           <span aria-hidden>📎</span>
         </IconButton>

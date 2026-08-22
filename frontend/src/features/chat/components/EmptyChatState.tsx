@@ -6,7 +6,7 @@ interface EmptyChatStateProps {
 /** Shown at the top of a conversation with no message history yet. */
 export function EmptyChatState({ name }: EmptyChatStateProps) {
   return (
-    <div className="flex flex-col items-center gap-1 px-4 py-10 text-center">
+    <div className="flex flex-col items-center gap-1 px-4 py-6 text-center md:py-10">
       <p className="text-sm font-medium text-text-normal">
         This is the start of your conversation with {name}.
       </p>

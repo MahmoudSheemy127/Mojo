@@ -25,7 +25,7 @@ export function MessageBubble({
 }: MessageBubbleProps) {
   if (message.deleted) {
     return (
-      <div className="px-4 py-0.5 pl-16 text-sm italic text-text-muted">
+      <div className="px-3 py-0.5 pl-12 text-sm italic text-text-muted md:px-4 md:pl-16">
         This message was deleted
       </div>
     );
@@ -36,12 +36,12 @@ export function MessageBubble({
   return (
     <div
       className={cn(
-        'group flex gap-3 px-4 py-0.5 hover:bg-bg-hover/40',
+        'group flex gap-3 px-3 py-0.5 hover:bg-bg-hover/40 md:px-4',
         showHeader && 'mt-2',
         isFailed && 'opacity-70',
       )}
     >
-      <div className="w-10 shrink-0">
+      <div className="w-8 shrink-0 md:w-10">
         {showHeader && (
           <Avatar
             name={message.authorName}
