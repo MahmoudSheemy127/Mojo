@@ -10,6 +10,7 @@ import type { Conversation, DmConversation, GroupConversation, PublicUser } from
 import type { ConversationSummary } from '@/types/entities';
 import { toUiPresence } from '@/features/presence/presence';
 import { formatRelative } from '@/utils/formatDate';
+import { cn } from '@/utils/cn';
 import { useContacts } from '../hooks/useContacts';
 import { useConversations, useOpenDm } from '../hooks/useConversations';
 import { useRemoveFriend } from '../hooks/useRemoveFriend';
@@ -82,7 +83,7 @@ function toConversationSummary(
 }
 
 /** Left column: action buttons + tabs + active tab content. */
-export function ChatList() {
+export function ChatList({ className }: { className?: string }) {
   const [tab, setTab] = useState<SidebarTab>('chats');
   const navigate = useNavigate();
   const { conversationId } = useParams();
@@ -91,7 +92,12 @@ export function ChatList() {
   const openConversation = (id: string) => navigate(`/c/${id}`);
 
   return (
-    <aside className="flex h-full w-[300px] shrink-0 flex-col border-r border-bg-deepest bg-bg-sidebar">
+    <aside
+      className={cn(
+        'h-full w-full flex-col border-r border-bg-deepest bg-bg-sidebar md:w-[300px] md:shrink-0',
+        className,
+      )}
+    >
       <div className="flex gap-2 p-3">
         <Button
           size="sm"

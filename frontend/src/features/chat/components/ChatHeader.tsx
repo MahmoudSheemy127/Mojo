@@ -1,4 +1,5 @@
 // src/features/chat/components/ChatHeader.tsx
+import { useNavigate } from 'react-router-dom';
 import type { ConversationSummary } from '@/types/entities';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -35,6 +36,7 @@ export function ChatHeader({
   onRemoveFriend,
 }: ChatHeaderProps) {
   const isDm = conversation.type === 'dm';
+  const navigate = useNavigate();
 
   const menuItems: DropdownMenuItem[] = isDm
     ? [
@@ -67,8 +69,15 @@ export function ChatHeader({
       ];
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-bg-deepest px-4">
+    <header className="flex h-14 shrink-0 items-center justify-between border-b border-bg-deepest px-3 md:px-4">
       <div className="flex min-w-0 items-center gap-3">
+        <IconButton
+          aria-label="Back to conversations"
+          onClick={() => navigate('/c')}
+          className="md:hidden"
+        >
+          <span aria-hidden>←</span>
+        </IconButton>
         {isDm ? (
           <UserAvatarWithPresence
             name={conversation.name}
@@ -94,9 +103,21 @@ export function ChatHeader({
 
       <div className="flex items-center gap-2">
         {/* Voice call button intentionally omitted — no backing FR (see README). */}
-        <Button size="sm" variant="ghost" onClick={onInvite}>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onInvite}
+          className="hidden md:inline-flex"
+        >
           {isDm ? 'Create group' : 'Invite'}
         </Button>
+        <IconButton
+          aria-label={isDm ? 'Create group' : 'Invite'}
+          onClick={onInvite}
+          className="md:hidden"
+        >
+          <span aria-hidden>+</span>
+        </IconButton>
         {menuItems.length > 0 && (
           <DropdownMenu
             trigger={({ toggle }) => (

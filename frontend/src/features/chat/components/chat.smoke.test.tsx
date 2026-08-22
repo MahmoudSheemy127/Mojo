@@ -12,6 +12,12 @@ import { MessageComposer } from './MessageComposer';
 import { ChatHeader } from './ChatHeader';
 import type { Message, ConversationSummary } from '@/types/entities';
 
+vi.mock('react-router-dom', async () => {
+  const actual =
+    await vi.importActual<Record<string, unknown>>('react-router-dom');
+  return { ...actual, useNavigate: () => vi.fn() };
+});
+
 describe('TypingIndicator', () => {
   it('renders nothing when names array is empty', () => {
     const { container } = render(<TypingIndicator names={[]} />);
@@ -310,8 +316,8 @@ describe('ChatHeader', () => {
       <ChatHeader conversation={dmConversation} onInvite={vi.fn()} />,
     );
     expect(
-      screen.getByRole('button', { name: 'Create group' }),
-    ).toBeInTheDocument();
+      screen.getAllByRole('button', { name: 'Create group' }).length,
+    ).toBeGreaterThan(0);
   });
 
   it('shows "Invite" button for groups', () => {
@@ -319,15 +325,15 @@ describe('ChatHeader', () => {
       <ChatHeader conversation={groupConversation} onInvite={vi.fn()} />,
     );
     expect(
-      screen.getByRole('button', { name: 'Invite' }),
-    ).toBeInTheDocument();
+      screen.getAllByRole('button', { name: 'Invite' }).length,
+    ).toBeGreaterThan(0);
   });
 
   it('calls onInvite when invite button is clicked', async () => {
     const onInvite = vi.fn();
     const user = userEvent.setup();
     render(<ChatHeader conversation={groupConversation} onInvite={onInvite} />);
-    await user.click(screen.getByRole('button', { name: 'Invite' }));
+    await user.click(screen.getAllByRole('button', { name: 'Invite' })[0]!);
     expect(onInvite).toHaveBeenCalled();
   });
 
@@ -387,5 +393,24 @@ describe('ChatHeader', () => {
     expect(
       screen.queryByRole('button', { name: 'Conversation actions' }),
     ).toBeNull();
+  });
+
+  it('shows a mobile-only back button hidden on larger screens', () => {
+    render(
+      <ChatHeader conversation={dmConversation} onInvite={vi.fn()} />,
+    );
+    const back = screen.getByRole('button', { name: 'Back to conversations' });
+    expect(back.className).toContain('md:hidden');
+  });
+
+  it('renders a text action on md+ and an icon action on mobile', () => {
+    render(
+      <ChatHeader conversation={groupConversation} onInvite={vi.fn()} />,
+    );
+    const buttons = screen.getAllByRole('button', { name: 'Invite' });
+    const icon = buttons.find((b) => b.className.includes('md:hidden'));
+    const text = buttons.find((b) => b.className.includes('hidden'));
+    expect(icon).toBeTruthy();
+    expect(text).toBeTruthy();
   });
 });
