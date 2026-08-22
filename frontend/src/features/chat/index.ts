@@ -3,6 +3,7 @@
 export { ChatWindow } from './components/ChatWindow';
 export { EmptyChatState } from './components/EmptyChatState';
 export { useMessages, messagesKey } from './hooks/useMessages';
+export { useMessageLiveUpdates } from './hooks/useMessageLiveUpdates';
 export { useSendMessage } from './hooks/useSendMessage';
 export { useDeleteMessage } from './hooks/useDeleteMessage';
 export { useTyping } from './hooks/useTyping';

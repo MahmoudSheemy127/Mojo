@@ -7,4 +7,4 @@ export { useUserSearch } from './hooks/useUserSearch';
 export { useSendFriendRequest, useAcceptFriendRequest, useDeclineFriendRequest } from './hooks/useFriendRequest';
 export { useRemoveFriend } from './hooks/useRemoveFriend';
 export { useBlockUser } from './hooks/useBlockUser';
-export { conversationsKey, useConversations, useOpenDm } from './hooks/useConversations';
+export { conversationsKey, useConversations, useConversationLiveUpdates, useOpenDm } from './hooks/useConversations';

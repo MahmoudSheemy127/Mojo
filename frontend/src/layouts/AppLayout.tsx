@@ -3,7 +3,8 @@ import { useMemo, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { HeaderBar } from '@/components/shared/HeaderBar';
 import { ConnectionStatusBanner } from '@/components/shared/ConnectionStatusBanner';
-import { ChatList, FindFriendsModal } from '@/features/contacts';
+import { ChatList, FindFriendsModal, useConversationLiveUpdates } from '@/features/contacts';
+import { useMessageLiveUpdates } from '@/features/chat';
 import {
   CreateGroupModal,
   InviteMembersModal,
@@ -28,8 +29,10 @@ export default function AppLayout() {
   useSocket();
   usePresenceFeed();
   usePresence();
+  useConversationLiveUpdates();
+  useMessageLiveUpdates();
 
-  const overlay = useMemo(
+const overlay = useMemo(
     () => ({
       activeModal,
       openModal: (type: ModalType, groupId?: string) => {
