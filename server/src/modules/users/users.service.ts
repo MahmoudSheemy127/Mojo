@@ -139,6 +139,7 @@ export class UsersService {
    * NF-16). The RealtimeModule listener fans it out to the user's contacts.
    */
   async setPresence(userId: string, status: 'online' | 'away' | 'dnd'): Promise<{ presence: PresenceStatus }> {
+    
     await this.prisma.user.update({
       where: { id: userId },
       data: { presence: status.toUpperCase() as Prisma.UserUpdateInput['presence'] },
@@ -150,6 +151,7 @@ export class UsersService {
     this.events.emit(AppEvent.PresenceChanged, payload);
     return { presence: status };
   }
+
 
   /**
    * GET /users/search — case-insensitive partial username match (FR-05). Excludes
@@ -203,6 +205,7 @@ export class UsersService {
 
     return { data, nextCursor };
   }
+
 
   /**
    * GET /users/:userId — public profile. Returns 404 when the user does not exist

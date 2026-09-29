@@ -18,18 +18,20 @@ async increment(userId: string): Promise<void> {
     /* Increment connection count in Redis */
     const count = await this.redis.incr(`presence:${userId}`);
 
-    console.log("Count: ", count);
-
-    /* Only emit on first connection (0 → 1) */
+    /* Only transition on the first connection (0 → 1) */
     if(count === 1) {
-        /* Check the stored user's presence status */
+        /* Check the user's prior status so we don't re-emit a no-op transition */
         const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { presence: true } });
-        /* Emit stored status signal */
-        const status = (user?.presence ?? 'ONLINE').toLowerCase() as PresenceStatus;
-        this.eventEmitter.emit(AppEvent.PresenceChanged, { userId, status });
+        const priorStatus = user?.presence ?? 'OFFLINE';
+
+        /* Move the user straight to ONLINE; the listener persists the committed status */
+        if (priorStatus !== 'ONLINE') {
+            this.eventEmitter.emit(AppEvent.PresenceChanged, { userId, status: 'online' satisfies PresenceStatus });
+        }
     }
 
 }
+
 
 async decrement(userId: string): Promise<void> {
 
@@ -47,5 +49,6 @@ async decrement(userId: string): Promise<void> {
     }
 
 }
+
 
 }
