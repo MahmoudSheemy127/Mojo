@@ -14,6 +14,8 @@ import {
 } from "@events/app-events";
 import { OnEvent } from "@nestjs/event-emitter";
 import { Injectable, Logger } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
+import { PrismaService } from "@prisma-module/prisma.service";
 import { ConversationsService } from "@modules/conversations/conversations.service";
 import { GroupsService } from "@modules/groups/groups.service";
 import { RealtimeGateway } from "./realtime.gateway";
@@ -27,14 +29,21 @@ export class RealtimeListener {
         private readonly gateway: RealtimeGateway,
         private readonly conversations: ConversationsService,
         private readonly groups: GroupsService,
+        private readonly prisma: PrismaService,
     ) {}
 
 
 
     @OnEvent(AppEvent.PresenceChanged)
-    handlePresenceChanged(payload: PresenceChangedPayload) {
+    async handlePresenceChanged(payload: PresenceChangedPayload) {
         // TODO: replace with per-contact fan-out when ContactsModule is implemented
         this.gateway.server.emit('presence:changed', payload);
+
+        /* Persist the new status after broadcasting it */
+        await this.prisma.user.update({
+            where: { id: payload.userId },
+            data: { presence: payload.status.toUpperCase() as Prisma.UserUpdateInput['presence'] },
+        });
     }
 
     /**

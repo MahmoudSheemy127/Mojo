@@ -18,6 +18,7 @@ export interface AppConfig {
   google: {
     clientId: string;
     clientSecret: string;
+    
     callbackUrl: string;
   };
 }

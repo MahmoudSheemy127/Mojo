@@ -17,6 +17,7 @@ export function usePresenceFeed() {
 
   const onPresenceChanged = useCallback(
     (payload: { userId: string; status: Presence }) => {
+      console.log('Presence changed:', payload.userId, payload.status);
       queryClient.setQueryData<PublicUser[]>(
         [...friendsKey],
         (old) => {
